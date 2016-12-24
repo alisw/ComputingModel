@@ -1,0 +1,7 @@
+<RCC>
+    <qresource prefix="/">
+        <file>data/2016/MandO.csv</file>
+        <file>data/2017/MandO.csv</file>
+        <file>data/2017/Requirements.csv</file>
+    </qresource>
+</RCC>

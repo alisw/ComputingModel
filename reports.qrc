@@ -1,0 +1,7 @@
+<RCC>
+    <qresource prefix="/">
+        <file>data/2016/11/cpu_report.csv</file>
+        <file>data/2016/pledges.csv</file>
+        <file>data/2017/pledges.csv</file>
+    </qresource>
+</RCC>

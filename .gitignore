@@ -1,0 +1,6 @@
+ComputingResources.pro.user.*
+*.autosave
+.DS_Store
+data/.DS_Store
+data/*
+data/2016/.DS_Store
