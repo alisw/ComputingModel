@@ -1,0 +1,190 @@
+Tier,Country,Federation,PledgeType,PledgeUnit,ALICE,ATLAS,CMS,LHCb
+Tier 0,Switzerland,CH-CERN,CPU,HEP-SPEC06,90000,111000,121000,34000
+Tier 0,Switzerland,CH-CERN,Disk,Tbytes,8100,10000,7000,4000
+Tier 0,Switzerland,CH-CERN,Tape,Tbytes,14000,31000,28500,8500
+Tier 1,Canada,CA-TRIUMF,CPU,HEP-SPEC06,,36500,,
+Tier 1,Canada,CA-TRIUMF,Disk,Tbytes,,3500,,
+Tier 1,Canada,CA-TRIUMF,Tape,Tbytes,,5300,,
+Tier 1,France,FR-CCIN2P3,CPU,HEP-SPEC06,11500,33560,16750,21700
+Tier 1,France,FR-CCIN2P3,Disk,Tbytes,1260,3680,1550,1350
+Tier 1,France,FR-CCIN2P3,Tape,Tbytes,1050,4200,4475,1800
+Tier 1,Germany,DE-KIT,CPU,HEP-SPEC06,30000,44375,17500,19200
+Tier 1,Germany,DE-KIT,Disk,Tbytes,2700,4125,2600,2340
+Tier 1,Germany,DE-KIT,Tape,Tbytes,5250,5500,5500,1850
+Tier 1,Italy,IT-INFN-CNAF,CPU,HEP-SPEC06,20900,35500,22750,19800
+Tier 1,Italy,IT-INFN-CNAF,Disk,Tbytes,1920,3500,3380,2520
+Tier 1,Italy,IT-INFN-CNAF,Tape,Tbytes,2460,4400,7150,2180
+Tier 1,Netherlands,NL-T1,CPU,HEP-SPEC06,6220,35015,,13848
+Tier 1,Netherlands,NL-T1,Disk,Tbytes,390,3460,,1200
+Tier 1,Netherlands,NL-T1,Tape,Tbytes,300,6015,,2200
+Tier 1,Nordic,NDGF,CPU,HEP-SPEC06,11920,22130,,
+Tier 1,Nordic,NDGF,Disk,Tbytes,1590,2240,,
+Tier 1,Nordic,NDGF,Tape,Tbytes,770,2420,,
+Tier 1,Republic of Korea,KR-KISTI-GSDC,CPU,HEP-SPEC06,25000,,,
+Tier 1,Republic of Korea,KR-KISTI-GSDC,Disk,Tbytes,1000,,,
+Tier 1,Republic of Korea,KR-KISTI-GSDC,Tape,Tbytes,1500,,,
+Tier 1,Russian Federation,NRC-KI-T1,CPU,HEP-SPEC06,9200,9200,,4600
+Tier 1,Russian Federation,NRC-KI-T1,Disk,Tbytes,800,800,,400
+Tier 1,Russian Federation,NRC-KI-T1,Tape,Tbytes,800,,,400
+Tier 1,Russian Federation,RU-JINR-T1,CPU,HEP-SPEC06,,,14400,
+Tier 1,Russian Federation,RU-JINR-T1,Disk,Tbytes,,,600,
+Tier 1,Russian Federation,RU-JINR-T1,Tape,Tbytes,,,100,
+Tier 1,Spain,ES-PIC,CPU,HEP-SPEC06,,18105,8925,7150
+Tier 1,Spain,ES-PIC,Disk,Tbytes,,1785,1326,748
+Tier 1,Spain,ES-PIC,Tape,Tbytes,,2703,2805,787
+Tier 1,Taiwan,TW-ASGC,CPU,HEP-SPEC06,,18919,8750,
+Tier 1,Taiwan,TW-ASGC,Disk,Tbytes,,2475,1400,
+Tier 1,Taiwan,TW-ASGC,Tape,Tbytes,,2000,2000,
+Tier 1,UK,UK-T1-RAL,CPU,HEP-SPEC06,2200,44380,14000,34650
+Tier 1,UK,UK-T1-RAL,Disk,Tbytes,200,4130,2080,3620
+Tier 1,UK,UK-T1-RAL,Tape,Tbytes,120,5500,4400,2390
+Tier 1,USA,US-FNAL-CMS,CPU,HEP-SPEC06,,,70000,
+Tier 1,USA,US-FNAL-CMS,Disk,Tbytes,,,11000,
+Tier 1,USA,US-FNAL-CMS,Tape,Tbytes,,,22000,
+Tier 1,USA,US-T1-BNL,CPU,HEP-SPEC06,,82000,,
+Tier 1,USA,US-T1-BNL,Disk,Tbytes,,7600,,
+Tier 1,USA,US-T1-BNL,Tape,Tbytes,,10000,,
+Tier 2,Australia,University of Melbourne,CPU,HEP-SPEC06,,8500,,
+Tier 2,Australia,University of Melbourne,Disk,Tbytes,,850,,
+Tier 2,Austria,Austrian Tier-2 Federation,CPU,HEP-SPEC06,,1857,5000,
+Tier 2,Austria,Austrian Tier-2 Federation,Disk,Tbytes,,120,500,
+Tier 2,Belgium,Belgian Tier-2 Federation,CPU,HEP-SPEC06,,,16800,
+Tier 2,Belgium,Belgian Tier-2 Federation,Disk,Tbytes,,,2200,
+Tier 2,Brazil,"SPRACE, Sao Paulo",CPU,HEP-SPEC06,,,13698,
+Tier 2,Brazil,"SPRACE, Sao Paulo",Disk,Tbytes,,,787,
+Tier 2,Canada,Canada-East Federation,CPU,HEP-SPEC06,,10625,,
+Tier 2,Canada,Canada-East Federation,Disk,Tbytes,,1300,,
+Tier 2,Canada,Canada-West Federation,CPU,HEP-SPEC06,,10625,,
+Tier 2,Canada,Canada-West Federation,Disk,Tbytes,,1300,,
+Tier 2,China,"IHEP, Beijing",CPU,HEP-SPEC06,,4800,4800,
+Tier 2,China,"IHEP, Beijing",Disk,Tbytes,,70,320,
+Tier 2,Czech Republic,"FZU AS, Prague",CPU,HEP-SPEC06,2000,10000,,
+Tier 2,Czech Republic,"FZU AS, Prague",Disk,Tbytes,900,1600,,
+Tier 2,Estonia,"NICPB, Tallinn",CPU,HEP-SPEC06,,,45000,
+Tier 2,Estonia,"NICPB, Tallinn",Disk,Tbytes,,,1000,
+Tier 2,Finland,NDGF/HIP Tier2,CPU,HEP-SPEC06,,,6300,
+Tier 2,Finland,NDGF/HIP Tier2,Disk,Tbytes,,,510,
+Tier 2,France,CC-IN2P3 AF,CPU,HEP-SPEC06,,9750,7600,
+Tier 2,France,CC-IN2P3 AF,Disk,Tbytes,,1310,510,
+Tier 2,France,"CPPM, Marseille",CPU,HEP-SPEC06,,4014,,2000
+Tier 2,France,"CPPM, Marseille",Disk,Tbytes,,600,,100
+Tier 2,France,"GRIF, Paris",CPU,HEP-SPEC06,7087,13260,11778,4437
+Tier 2,France,"GRIF, Paris",Disk,Tbytes,477,1666,815,170
+Tier 2,France,"IPHC, Strasbourg",CPU,HEP-SPEC06,3500,,9000,
+Tier 2,France,"IPHC, Strasbourg",Disk,Tbytes,200,,600,
+Tier 2,France,"LAPP, Annecy",CPU,HEP-SPEC06,,9000,,3200
+Tier 2,France,"LAPP, Annecy",Disk,Tbytes,,940,,2
+Tier 2,France,"LPC, Clermont-Ferrand",CPU,HEP-SPEC06,2641,5715,,1414
+Tier 2,France,"LPC, Clermont-Ferrand",Disk,Tbytes,178,718,,2
+Tier 2,France,LPSC Grenoble,CPU,HEP-SPEC06,2243,3901,,
+Tier 2,France,LPSC Grenoble,Disk,Tbytes,151,477,,
+Tier 2,France,"SUBATECH, Nantes",CPU,HEP-SPEC06,3000,,,
+Tier 2,France,"SUBATECH, Nantes",Disk,Tbytes,310,,,
+Tier 2,Germany,ATLAS Federation DESY,CPU,HEP-SPEC06,,15600,,
+Tier 2,Germany,ATLAS Federation DESY,Disk,Tbytes,,1633,,
+Tier 2,Germany,ATLAS Federation FR/W,CPU,HEP-SPEC06,,13000,,
+Tier 2,Germany,ATLAS Federation FR/W,Disk,Tbytes,,1634,,
+Tier 2,Germany,"ATLAS Federation, HH/Goe",CPU,HEP-SPEC06,,6500,,
+Tier 2,Germany,"ATLAS Federation, HH/Goe",Disk,Tbytes,,817,,
+Tier 2,Germany,"ATLAS Federation, Munich",CPU,HEP-SPEC06,,13000,,
+Tier 2,Germany,"ATLAS Federation, Munich",Disk,Tbytes,,1634,,
+Tier 2,Germany,CMS Federation DESY RWTH Aachen,CPU,HEP-SPEC06,,,30400,
+Tier 2,Germany,CMS Federation DESY RWTH Aachen,Disk,Tbytes,,,2030,
+Tier 2,Germany,"GSI, Darmstadt",CPU,HEP-SPEC06,7000,,,
+Tier 2,Germany,"GSI, Darmstadt",Disk,Tbytes,550,,,
+Tier 2,Germany,LHCb Federation DESY,CPU,HEP-SPEC06,,,,3200
+Tier 2,Germany,LHCb Federation DESY,Disk,Tbytes,,,,2
+Tier 2,Greece,"GRID LAB, KAVALA Institute of Technology",CPU,HEP-SPEC06,,1126,246,
+Tier 2,Greece,"GRID LAB, KAVALA Institute of Technology",Disk,Tbytes,,275,55,
+Tier 2,Greece,"HEP Laboratory, University of Ioannina",CPU,HEP-SPEC06,,,1870,
+Tier 2,Greece,"HEP Laboratory, University of Ioannina",Disk,Tbytes,,,200,
+Tier 2,Hungary,HGCC Federation,CPU,HEP-SPEC06,1320,,3960,
+Tier 2,Hungary,HGCC Federation,Disk,Tbytes,90,,234,
+Tier 2,India,"TIFR, Mumbai",CPU,HEP-SPEC06,,,2800,
+Tier 2,India,"TIFR, Mumbai",Disk,Tbytes,,,970,
+Tier 2,India,"VECC/SINP, Kolkata",CPU,HEP-SPEC06,6000,,,
+Tier 2,India,"VECC/SINP, Kolkata",Disk,Tbytes,240,,,
+Tier 2,Israel,IL-HEP Tier-2 Federation,CPU,HEP-SPEC06,,6200,,
+Tier 2,Israel,IL-HEP Tier-2 Federation,Disk,Tbytes,,960,,
+Tier 2,Italy,INFN T2 Federation,CPU,HEP-SPEC06,37000,35100,50700,8500
+Tier 2,Italy,INFN T2 Federation,Disk,Tbytes,2500,3430,3510,0
+Tier 2,Japan,"ICEPP, Tokyo",CPU,HEP-SPEC06,,20000,,
+Tier 2,Japan,"ICEPP, Tokyo",Disk,Tbytes,,2000,,
+Tier 2,Latin America,Latin America Federation,CPU,HEP-SPEC06,852,7340,20000,8000
+Tier 2,Latin America,Latin America Federation,Disk,Tbytes,300,236,1202,120
+Tier 2,Mexico,UNAM,CPU,HEP-SPEC06,4900,,,
+Tier 2,Mexico,UNAM,Disk,Tbytes,570,,,
+Tier 2,Norway,UNINETT SIGMA Tier-2,CPU,HEP-SPEC06,,3190,,
+Tier 2,Norway,UNINETT SIGMA Tier-2,Disk,Tbytes,,490,,
+Tier 2,Pakistan,Pakistan Tier-2 Federation,CPU,HEP-SPEC06,,,6365,
+Tier 2,Pakistan,Pakistan Tier-2 Federation,Disk,Tbytes,,,260,
+Tier 2,Poland,Polish Tier-2 Federation,CPU,HEP-SPEC06,4670,6050,5290,3190
+Tier 2,Poland,Polish Tier-2 Federation,Disk,Tbytes,325,465,330,
+Tier 2,Portugal,LIP Tier-2 Federation,CPU,HEP-SPEC06,,3000,3000,
+Tier 2,Portugal,LIP Tier-2 Federation,Disk,Tbytes,,190,170,
+Tier 2,Republic of Korea,"CHEP of KNU, Daegu",CPU,HEP-SPEC06,,,6870,
+Tier 2,Republic of Korea,"CHEP of KNU, Daegu",Disk,Tbytes,,,510,
+Tier 2,Republic of Korea,"KISTI, Daejeon",CPU,HEP-SPEC06,600,,,
+Tier 2,Republic of Korea,"KISTI, Daejeon",Disk,Tbytes,50,,,
+Tier 2,Romania,Romanian Tier-2 Federation,CPU,HEP-SPEC06,17000,16100,,4900
+Tier 2,Romania,Romanian Tier-2 Federation,Disk,Tbytes,1290,1000,,40
+Tier 2,Russian Federation,Russian Data-Intensive GRID,CPU,HEP-SPEC06,20467,29185,31690,61
+Tier 2,Russian Federation,Russian Data-Intensive GRID,Disk,Tbytes,1645,2345,2547,5
+Tier 2,Slovakia,Slovak Tier2 Federation,CPU,HEP-SPEC06,4800,4800,,
+Tier 2,Slovakia,Slovak Tier2 Federation,Disk,Tbytes,280,250,,
+Tier 2,Slovenia,SiGNET,CPU,HEP-SPEC06,,15000,,
+Tier 2,Slovenia,SiGNET,Disk,Tbytes,,900,,
+Tier 2,Spain,ATLAS Federation,CPU,HEP-SPEC06,,20600,,
+Tier 2,Spain,ATLAS Federation,Disk,Tbytes,,2800,,
+Tier 2,Spain,CMS Federation,CPU,HEP-SPEC06,,,20000,
+Tier 2,Spain,CMS Federation,Disk,Tbytes,,,1500,
+Tier 2,Spain,LHCb Federation,CPU,HEP-SPEC06,,,,2800
+Tier 2,Spain,LHCb Federation,Disk,Tbytes,,,,1
+Tier 2,Sweden,SNIC Tier-2,CPU,HEP-SPEC06,2820,5050,,
+Tier 2,Sweden,SNIC Tier-2,Disk,Tbytes,400,520,,
+Tier 2,Switzerland,CHIPP,CPU,HEP-SPEC06,,21400,10400,5200
+Tier 2,Switzerland,CHIPP,Disk,Tbytes,,1142,792,216
+Tier 2,Taiwan,Taiwan Analysis Facility Federation,CPU,HEP-SPEC06,,3264,1750,
+Tier 2,Taiwan,Taiwan Analysis Facility Federation,Disk,Tbytes,,448,290,
+Tier 2,Thailand,National e-Science Infrastructure Consortium,CPU,HEP-SPEC06,1000,,3000,
+Tier 2,Thailand,National e-Science Infrastructure Consortium,Disk,Tbytes,200,,200,
+Tier 2,Turkey,Turkish Tier-2 Federation,CPU,HEP-SPEC06,,5100,4700,
+Tier 2,Turkey,Turkish Tier-2 Federation,Disk,Tbytes,,550,350,
+Tier 2,UK,London Tier 2,CPU,HEP-SPEC06,,11934,10592,778
+Tier 2,UK,London Tier 2,Disk,Tbytes,,1499,733,1
+Tier 2,UK,NorthGrid,CPU,HEP-SPEC06,,13689,,4375
+Tier 2,UK,NorthGrid,Disk,Tbytes,,1720,,300
+Tier 2,UK,ScotGrid,CPU,HEP-SPEC06,,7566,,1718
+Tier 2,UK,ScotGrid,Disk,Tbytes,,951,,1
+Tier 2,UK,SouthGrid,CPU,HEP-SPEC06,3800,5772,5008,3223
+Tier 2,UK,SouthGrid,Disk,Tbytes,256,725,347,300
+Tier 2,USA,Caltech CMS T2,CPU,HEP-SPEC06,,,14000,
+Tier 2,USA,Caltech CMS T2,Disk,Tbytes,,,1000,
+Tier 2,USA,Florida CMS T2,CPU,HEP-SPEC06,,,14000,
+Tier 2,USA,Florida CMS T2,Disk,Tbytes,,,1000,
+Tier 2,USA,Great Lakes ATLAS T2,CPU,HEP-SPEC06,,17000,,
+Tier 2,USA,Great Lakes ATLAS T2,Disk,Tbytes,,2200,,
+Tier 2,USA,LBNL ALICE Berkeley CA,CPU,HEP-SPEC06,12000,,,
+Tier 2,USA,LBNL ALICE Berkeley CA,Disk,Tbytes,1050,,,
+Tier 2,USA,"LLNL ALICE, Livermore CA",CPU,HEP-SPEC06,11500,,,
+Tier 2,USA,"LLNL ALICE, Livermore CA",Disk,Tbytes,650,,,
+Tier 2,USA,MIT CMS T2,CPU,HEP-SPEC06,,,14000,
+Tier 2,USA,MIT CMS T2,Disk,Tbytes,,,1000,
+Tier 2,USA,Midwest ATLAS T2,CPU,HEP-SPEC06,,25000,,
+Tier 2,USA,Midwest ATLAS T2,Disk,Tbytes,,3300,,
+Tier 2,USA,Nebraska CMS T2,CPU,HEP-SPEC06,,,14000,
+Tier 2,USA,Nebraska CMS T2,Disk,Tbytes,,,1000,
+Tier 2,USA,Northeast ATLAS T2,CPU,HEP-SPEC06,,17000,,
+Tier 2,USA,Northeast ATLAS T2,Disk,Tbytes,,2200,,
+Tier 2,USA,Purdue CMS T2,CPU,HEP-SPEC06,,,14000,
+Tier 2,USA,Purdue CMS T2,Disk,Tbytes,,,1000,
+Tier 2,USA,SLAC ATLAS T2,CPU,HEP-SPEC06,,17000,,
+Tier 2,USA,SLAC ATLAS T2,Disk,Tbytes,,2200,,
+Tier 2,USA,Southwest ATLAS T2,CPU,HEP-SPEC06,,17000,,
+Tier 2,USA,Southwest ATLAS T2,Disk,Tbytes,,2200,,
+Tier 2,USA,U. Wisconsin CMS T2,CPU,HEP-SPEC06,,,14000,
+Tier 2,USA,U. Wisconsin CMS T2,Disk,Tbytes,,,1000,
+Tier 2,USA,UC San Diego CMS T2,CPU,HEP-SPEC06,,,14000,
+Tier 2,USA,UC San Diego CMS T2,Disk,Tbytes,,,1000,
+Tier 2,Ukraine,Ukrainian Tier-2 Federation,CPU,HEP-SPEC06,2000,,7500,
+Tier 2,Ukraine,Ukrainian Tier-2 Federation,Disk,Tbytes,150,,550,

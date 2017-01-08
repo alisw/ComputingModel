@@ -1,0 +1,164 @@
+Funding Agency;Storage Element;Computing Element  ML;Computing element WLCG
+Armenia;;Yerevan;
+Austria;;Vienna;Austria
+Brazil;;CBPF;Latin America
+Brazil;ALICE::SaoPaulo::SE;SaoPaulo;Latin America
+CERN;ALICE::CERN::CASTOR2;CERN-AURORA;CH-CERN
+CERN;ALICE::CERN::DPM;CERN-CORONA;
+CERN;ALICE::CERN::EOS;CERN-MIRAGE;
+CERN;ALICE::CERN::OCDB;CERN-SIRIUS;
+CERN;ALICE::CERN::T0ALICE;CERN-TRITON;
+CERN;;CERN-ZENITH;
+CERN;;CERN-LSF;
+CERN;;CERN-DUE;
+CERN;;CERN-HLT;
+CERN;;CERN_HLT;
+CERN;;CERN_HLTDEV;
+CERN;;CERN_PLANCTON;
+CERN;;PLANCTON;
+CERN;;CERN-W5;
+CERN;;CERN-HW6;
+CERN;;CERN-VM5;
+CERN;;CERN-VM6;
+CERN;;CERN-SGE;
+CERN;;CERN-L;
+CERN;;CERN-SHA2;
+CERN;;CERN-CREAM;
+CERN;;CERN-CVMFS;
+CERN;;CERN;
+CERN;;Altaria;
+China-CMoE;;Wuhan;
+Czech Republic;ALICE::Prague::SE;Prague;Czech Republic
+Czech Republic;;Prague-CREAM;Czech Republic
+France;ALICE::CCIN2P3::SE;CCIN2P3;FR-CCIN2P3
+France;ALICE::CCIN2P3::TAPE;;
+France;;CCIN2P31;
+France;;CCIN2P32;
+France;;CCIN2P3-CREAM;
+France;ALICE::Clermont::SE;Clermont;France
+France;ALICE::GRIF_IPNO::SE;GRIF_IPNO;France
+France;ALICE::GRIF_IRFU::DPM;GRIF_IRFU;France
+France;;GRIF_IRFU_SHARED;France
+France;;GRIF_IRFU-CVMFS;France
+France;;GRIF_IRFU_ARC;France
+France;ALICE::Grenoble::SE;Grenoble;France
+France;ALICE::IPNL::SE;IPNL;France
+France;ALICE::Strasbourg_IRES::SE;Strasbourg_IRES;France
+France;ALICE::Subatech::EOS;Subatech;France
+France;;Subatech_CCIPL;France
+Germany;ALICE::FZK::SE;FZK-KIT;
+Germany;ALICE::FZK::TAPE;FZK;DE-KIT
+Germany;ALICE::GSI::SE2;GSI;
+Germany;;GSI-SCLAB;
+Germany;;GSI;
+Germany;;GSI_2;
+Germany;;GSI-SE2;
+Germany;;SGE;
+Germany;;GSI-SGE;
+Germany;;GSI-CREAM;
+Germany;;FZK_glexec;
+Germany;;FZK_CREAM;
+Germany;;UF;
+Germany;;HHLR_GU;
+Germany;;Dortmund;
+Greece;;Athens;
+Hungary;ALICE::KFKI::SE;KFKI;Hungary
+India-DAE;ALICE::Kolkata::EOS;Kolkata_CREAM;India
+India-DAE;ALICE::Kolkata::SE;Kolkata-CREAM;
+India-DAE;;Kolkata;
+India-DAE;;SINP;
+Indonesia-LIPI;;Cibinong;
+Indonesia-LIPI;;Bandung;
+Italy;ALICE::Bari::SE;Bari;Italy
+Italy;;Bari-Torrent;Italy
+Italy;;Bologna;Italy
+Italy;ALICE::CNAF::SE;CNAF;IT-INFN-CNAF
+Italy;ALICE::CNAF::TAPE;CNAF_DUE;IT-INFN-CNAF
+Italy;ALICE::Catania::SE;Catania;Italy
+Italy;;Catania-VF;Italy
+Italy;;TriGrid_Catania;Italy
+Italy;ALICE::CyberSar_Cagliari::SE;Cagliari;Italy
+Italy;;CyberSar;Italy
+Italy;;CyberSar-CREAM;Italy
+Italy;ALICE::Legnaro::SE;Legnaro;Italy
+Italy;ALICE::Trieste::SE;Trieste;Italy
+Italy;ALICE::Torino::SE;Torino;Italy
+Italy;;Torino-Torrent;Italy
+Italy;;Torino-CREAM;Italy
+Italy;;TriGrid;Italy
+Italy;;CNAF-DUE;Italy
+Italy;;CNAF-CREAM;Italy
+Italy;;CNAF_glexec;Italy
+Italy;;Legnaro-CREAM;Italy
+Japan;ALICE::Hiroshima::SE;Hiroshima;
+Japan;ALICE::Tsukuba::SE;Tsukuba;
+JINR;ALICE::JINR::EOS;JINR;
+JINR;ALICE::JINR::SE;JINR-CREAM;
+Mexico;;UNAM;Mexico
+Mexico;ALICE::UNAM_T1::EOS;UNAM_T1;Mexico
+Netherlands;ALICE::SARA::DCACHE;NIKHEF;NL-T1
+Netherlands;ALICE::SARA::DCACHE_TAPE;SARA;NL-T1
+Nordic;ALICE::NDGF::DCACHE;DCSC_KU;NDGF
+Nordic;ALICE::NDGF::DCACHE_TAPE;HIP;NDGF
+Nordic;;LUNARC;NDGF
+Nordic;;UiB;NDGF
+Nordic;;NSC;NDGF
+Nordic;;PDC;NDGF
+Nordic;;CSC;NDGF
+Nordic;;Aalborg;NDGF
+Pakistan;;COMSATS;Pakistan
+Pakistan;;PAKGRID;Pakistan
+Poland;ALICE::Cyfronet::XRD;Cyfronet;Poland
+Poland;ALICE::Poznan::SE;Poznan;Poland
+Poland;;WUT;Poland
+Republic of Korea;ALICE::KISTI_GSDC::SE2;KISTI_GSDC;KR-KISTI-GSDC
+Republic of Korea;ALICE::KISTI_GSDC::TAPE;KISTI_GSDC-T1;
+Republic of Korea;;KISTI-CREAM;
+Romania;ALICE::ISS::FILE;ISS;Romania
+Romania;;ISS_LCG;Romania
+Romania;ALICE::NIHAM::FILE;NIHAM;Romania
+Russia;ALICE::IHEP::SE;IHEP;Russian Federation
+Romania;;NIPNE;Romania
+Romania;;UPB;
+Russia;;IHEP-CREAM;Russian Federation
+Russia;ALICE::ITEP::SE;ITEP;Russian Federation
+Russia;;ITEP-CREAM;Russian Federation
+Russia;ALICE::MEPHI::EOS;MEPHI;Russian Federation
+Russia;ALICE::PNPI::SE;PNPI;Russian Federation 
+Russia;ALICE::RRC-KI::SE;RRC-KI;Russian Federation
+Russia;ALICE::RRC_KI_T1::DCACHE_TAPE;RRC_KI_T1;NRC-KI-T1
+Russia;ALICE::RRC_KI_T1::EOS;;
+Russia;ALICE::SPbSU::EOS;SPbSU;Russian Federation
+Russia;ALICE::Troitsk::SE;Troitsk;Russian Federation
+Russia;;Troitsk-CREAM;Russian Federation
+Russia;ALICE::SPbSU::SE;;
+Russia;;SPbSU-CC;
+Russia;;SPbSU-CREAM;
+Slovakia;ALICE::Bratislava::SE;Bratislava;Slovakia
+Slovakia;ALICE::Kosice::SE;Kosice;Slovakia
+South Africa;ALICE::ZA_CHPC::EOS;ZA_CHPC;South Africa
+South Africa;ALICE::ZA_CHPC::SE;;
+Spain;ALICE::Trujillo::SE;Trujillo;
+Spain;;Madrid;
+Sweden;ALICE::SNIC::DCACHE;SNIC;Sweden
+Thailand;ALICE::SUT::SE;SUT;Thailand
+Thailand;;NECTEC;Thailand
+Ukraine;ALICE::BITP::SE;BITP;Ukraine
+Ukraine;;BITP_ARC;Ukraine
+Ukraine;;ICYB;Ukraine
+Ukraine;;ICYB_ARC;Ukraine
+Ukraine;ALICE::ISMA::SE;ISMA;Ukraine
+Ukraine;;KNU;Ukraine
+Ukraine;;KPI;Ukraine
+UnitedKingdom-STFC;ALICE::Birmingham::SE;Birmingham;UK 
+UnitedKingdom-STFC;ALICE::RAL::SE;RAL_ARC;UK-T1-RAL
+UnitedKingdom-STFC;ALICE::RAL::TAPE;RAL;
+UnitedKingdom-STFC;;Oxford;UK
+UnitedKingdom-STFC;;RAL-WMS;UK
+USA;ALICE::ORNL::EOS;ORNL;USA
+USA;;OSC;USA
+USA;;LLNL;USA
+USA;;NERSC;USA
+USA;ALICE::LBL::EOS;LBL;USA
+USA;;TACC;USA
+USA;;ORNL_Titan;USA
