@@ -1,6 +1,8 @@
 // Funding Agency
 // Y. Schutz November 2016
 
+
+#include <QDateTime>
 #include <QDebug>
 
 #include "fundingagency.h"
@@ -48,9 +50,9 @@ void FundingAgency::addFA(FundingAgency *fa)
     mContrib += fa->contrib();
     mContribT  += fa->contribT();
     mMandOPayers += fa->payers();
-    required().setCPU(getRequiredCPU() + fa->getRequiredCPU());
-    required().setDisk(getRequiredDisk() + fa->getRequiredDisk());
-    required().setTape(getRequiredTape() + fa->getRequiredTape());
+    mRequiredResources.setCPU(getRequiredCPU() + fa->getRequiredCPU());
+    mRequiredResources.setDisk(getRequiredDisk() + fa->getRequiredDisk());
+    mRequiredResources.setTape(getRequiredTape() + fa->getRequiredTape());
     for (Tier *t : fa->tiers())
         addTier(t);
     fa->setObjectName(fa->objectName().prepend("-"));
@@ -68,6 +70,36 @@ void FundingAgency::addTier(Tier *site)
 }
 
 //===========================================================================
+void FundingAgency::addUsedCPU(const QString &month, double cpu)
+{
+    // add used cpu storage from this fa as reported by ML
+   if (!mUsedResourcesML[month]) {
+       Resources *res = new Resources(this);
+       res->setObjectName("Used Resources from ML");
+       mUsedResourcesML[month] =  res;
+   }
+   mUsedResourcesML[month]->setCPU(mUsedResourcesML[month]->getCPU() + cpu);
+
+}
+
+//===========================================================================
+Resources::Resources_type FundingAgency::addUsedDiskTape(const QString &month, const QString &se, double storage)
+{
+    // add used disk or trape storage from this fa as reported by ML
+    Resources::Resources_type rv;
+
+    if (se.contains("TAPE") || se.contains("T0ALICE") || se.contains("CASTOR2")) {
+        mUsedResourcesML[month]->setTape(mUsedResourcesML[month]->getTape() + storage);
+        rv = Resources::kTAPE;
+    }
+    else {
+        mUsedResourcesML[month]->setDisk(mUsedResourcesML[month]->getDisk() + storage);
+        rv = Resources::kDISK;
+    }
+    return rv;
+}
+
+//===========================================================================
 void FundingAgency::clear()
 {
     // clears everything
@@ -75,6 +107,8 @@ void FundingAgency::clear()
     mMandOPayers = 0;
     mPledgedResources.clear();
     mRequiredResources.clear();
+    foreach (Resources *res, mUsedResources)
+        res->clear();
 }
 
 //===========================================================================
@@ -84,25 +118,64 @@ void FundingAgency::clearUsed(const QString &month)
 
     for (Tier *t : mTiers)
         t->clearUsed(month);
+    Resources *res = mUsedResources[month];
+    res->clear();
 }
 
 //===========================================================================
-Resources* FundingAgency::getUsed(const QString &month) const
+void FundingAgency::computeUsedCPU(const QString &month)
 {
-    // retrieves total used resources from this FA
-    double cpu  = 0.0;
-    double disk = 0.0;
-    double tape = 0.0;
-    for (Tier *t : mTiers) {
-        cpu  += t->usedCPU(month);
-        disk += t->usedDisk(month);
-        tape += t->usedTape(month);
+    // calculates total used resources from this FA
+    if (!mUsedResources[month]) {
+        double cpu  = 0.0;
+        for (Tier *t : mTiers) {
+            cpu  += t->usedCPU(month);
+        }
+        Resources *res = new Resources(this);
+        res->setObjectName("Used Resources");
+        res->setCPU(cpu);
+        mUsedResources[month] = res;
     }
-    Resources *rv = new Resources;
-    rv->setCPU(cpu);
-    rv->setDisk(disk);
-    rv->setTape(tape);
-    return rv;
+}
+
+//===========================================================================
+double FundingAgency::getUsedCPU(const QString &month) const
+{
+    // retrieves total used CPU resources from this FA from WLCG
+    Resources *res = mUsedResources[month];
+    if (!res)
+        return 0.0;
+    return res->getCPU();
+}
+
+//===========================================================================
+double FundingAgency::getUsedCPUML(const QString &month) const
+{
+    // retrieves total used CPU resources from this FA from MonALISA
+    Resources *res = mUsedResourcesML[month];
+    if (!res)
+        return 0.0;
+    return res->getCPU();
+}
+
+//===========================================================================
+double FundingAgency::getUsedDiskML(const QString &month) const
+{
+    // retrieves total used disk resources from this FA
+    Resources *res = mUsedResourcesML[month];
+    if (!res)
+        return 0.0;
+    return res->getDisk();
+}
+
+//===========================================================================
+double FundingAgency::getUsedTapeML(const QString &month) const
+{
+    // retrieves total used tape resources from this FA
+    Resources *res = mUsedResourcesML[month];
+    if (!res)
+        return 0.0;
+    return res->getTape();
 }
 
 //===========================================================================
@@ -141,6 +214,28 @@ Tier *FundingAgency::search(const QString &n, bool aliasing) const
         }
     }
     return rv;
+}
+
+//===========================================================================
+bool FundingAgency::searchCE(const QString &ce) const
+{
+    // check if se belongs to this fa
+
+    for (Tier *t : mTiers)
+        if( t->findCE(ce) )
+            return true;
+    return false;
+}
+
+//===========================================================================
+bool FundingAgency::searchSE(const QString &se) const
+{
+    // check if se belongs to this fa
+
+    for (Tier *t : mTiers)
+        if( t->findSE(se) )
+            return true;
+    return false;
 }
 
 //===========================================================================

@@ -16,15 +16,18 @@ class Tier : public QObject
 
 public:
 
-    enum TierCat {kT0, kT1, kT2, kUnknown};
+    enum TierCat {kT0, kT1, kT2, kTOTS, kUnknown};
     explicit Tier(QObject *parent = 0);
     Tier (QString name, TierCat cat, Resources &res, QObject *parent = 0);
 
+    void    addCE(const QString &ce) { mMLCENames.append(ce); }
+    void    addSE(const QString &se) { mMLSENames.append(se); }
     void    addCEs(const QList<QString> &list);
     void    addSEs(const QList<QString> &list);
-    void    addUsedResources(QString &month, Resources *res);
     TierCat category() const { return mTierCategory; }
     void    clearUsed(const QString &month);
+    bool    findCE(const QString &ce);
+    bool    findSE(const QString &se);
     double  getCPU() const   { return mResources.getCPU(); }
     double  getDisk() const  { return mResources.getDisk(); }
     double  getTape() const  { return mResources.getTape(); }
@@ -35,6 +38,7 @@ public:
     QString getWLCGName() const  { return mWLCGName; }
     QString list() const;
     void    setAlias(QString alias) { mWLCGAliasName = alias; }
+    void    setUsedCPU(QString &month, double cpu);
     double  usedCPU(const QString &m) const { return mUsed[m].getCPU(); }
     double  usedDisk(const QString &m) const { return mUsed[m].getDisk(); }
     double  usedTape(const QString &m) const { return mUsed[m].getTape(); }

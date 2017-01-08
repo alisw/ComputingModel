@@ -10,7 +10,7 @@ Resources::Resources(QObject *parent) : QObject(parent),
     mCPU(0.0), mDisk(0.0), mTape(0.0)
 {
     // default ctor
-    setObjectName("No Name");
+    setObjectName("No pledges");
 }
 
 //===========================================================================
@@ -45,9 +45,11 @@ Resources::Resources(const Resources &other) :
 QString Resources::list() const
 {
     // list the resources
-    QString text = QString("Resources: %1 ☛").arg(objectName());
-    text.append(QString("CPU: %1 kHEPSPEC06 - Disk: %2 PB - Tape %3 PB\n").arg(mCPU, 5, 'f', 2).arg(mDisk, 5, 'f', 2).arg(mTape, 5, 'f', 2));
-
+    QString text = QString("Resources: %1").arg(objectName());
+    if (objectName() != "No pledges")
+        text.append(QString("☛ CPU: %1 kHEPSPEC06 - Disk: %2 PB - Tape %3 PB\n").arg(mCPU, 5, 'f', 2).arg(mDisk, 5, 'f', 2).arg(mTape, 5, 'f', 2));
+    else
+        text.append("\n");
     return text;
 }
 

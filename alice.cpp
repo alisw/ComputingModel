@@ -13,7 +13,6 @@
 #include "fundingagency.h"
 #include "mainwindow.h"
 #include "naming.h"
-#include "tier.h"
 
 ALICE ALICE::mInstance = ALICE();
 
@@ -21,6 +20,64 @@ ALICE ALICE::mInstance = ALICE();
 ALICE &ALICE::instance()
 {
     return mInstance;
+}
+
+//===========================================================================
+void ALICE::addCPU(Tier::TierCat cat, double cpu)
+{
+    // adds to the the total pledged cpu
+    switch (cat) {
+    case Tier::kT0:
+        mT0Pledged.setCPU(mT0Pledged.getCPU() + cpu);
+        break;
+    case Tier::kT1:
+        mT1Pledged.setCPU(mT1Pledged.getCPU() + cpu);
+        break;
+    case Tier::kT2:
+        mT2Pledged.setCPU(mT2Pledged.getCPU() + cpu);
+        break;
+    default:
+        break;
+    }
+}
+
+//===========================================================================
+void ALICE::addDisk(Tier::TierCat cat, double disk)
+{
+    // adds to the the total pledged disk
+    switch (cat) {
+    case Tier::kT0:
+        mT0Pledged.setDisk(mT0Pledged.getDisk() + disk);
+        break;
+    case Tier::kT1:
+        mT1Pledged.setDisk(mT1Pledged.getDisk() + disk);
+        break;
+    case Tier::kT2:
+        mT2Pledged.setDisk(mT2Pledged.getDisk() + disk);
+        break;
+    default:
+        break;
+    }
+}
+
+//===========================================================================
+void ALICE::addTape(Tier::TierCat cat, double tape)
+{
+    // adds to the the total pledged tape
+    switch (cat) {
+    case Tier::kT0:
+        mT0Pledged.setTape(mT0Pledged.getTape() + tape);
+        break;
+    case Tier::kT1:
+        mT1Pledged.setTape(mT1Pledged.getTape() + tape);
+        break;
+    case Tier::kT2:
+        mT2Pledged.setTape(mT2Pledged.getTape() + tape);
+        break;
+    default:
+        break;
+    }
+
 }
 
 //===========================================================================
@@ -43,12 +100,12 @@ void ALICE::doReqAndPle(const QString &year)
     // collect the requirements from an ad hoc table
     readRequirements(year);
 
-//    // draw the table in a view
-//    drawTable();
+    // draw the table in a view
+    drawTable();
 
 //    // save it to a csv file
 
-//    saveCSV(year);
+    saveCSV(year);
 
 
     // TEMPORARY DISABLE
@@ -64,30 +121,84 @@ void ALICE::drawTable()
     mModel->removeColumns(0, mModel->columnCount());
 
     qint32 row = 0;
-    qint32 norm = countMOPayers();
-    qint32 normT = countMOPayersT();
 
     for (FundingAgency *fa : mFAs) {
+        if (fa->name().left(1) == "-")
+            continue;
         QList<QStandardItem*> oneRow;
         oneRow.insert(kStatC, new QStandardItem(fa->status()));
         oneRow.insert(kFAC, new QStandardItem(fa->name()));
         oneRow.insert(kMOC, new QStandardItem(QString("%1").arg(fa->payers())));
         if (fa->name() == "CERN") {
-            norm -= fa->payers();  // CERN is not counted in the M&O payers
             oneRow.insert(kConC, new QStandardItem(QString("-")));
         } else {
-            double frac = (double)fa->payers() * 100. / norm;
-            fa->setContrib(frac);
-            double fracT = (double)fa->payers() * 100. / normT;
-            fa->setContribT(fracT);
-            oneRow.insert(kConC, new QStandardItem(QString("%1").arg(frac, 4, 'f', 2)));
+            oneRow.insert(kConC, new QStandardItem(QString("%1").arg(fa->contrib(), 4, 'f', 2)));
         }
+
+        qint32 col = kConC + 1;
+
+        // required
+        double cpu = fa->getRequiredCPU();
+        QStandardItem *cpuSIR = new QStandardItem(QString("%1").arg(cpu, 5, 'f', 2));
+        oneRow.insert(col++, cpuSIR);
+
+        double disk = fa->getRequiredDisk();
+        QStandardItem *diskSIR = new QStandardItem(QString("%1").arg(disk, 5, 'f', 2));
+        oneRow.insert(col++, diskSIR);
+
+        double tape = fa->getRequiredTape();
+        QStandardItem *tapeSIR = new QStandardItem(QString("%1").arg(tape, 5, 'f', 2));
+        oneRow.insert(col++, tapeSIR);
+
+        // pledges
+        cpu = fa->getPledgedCPU();
+        QStandardItem *cpuSIP = new QStandardItem(QString("%1").arg(cpu, 5, 'f', 2));
+        oneRow.insert(col++, cpuSIP);
+
+        disk = fa->getPledgedDisk();
+        QStandardItem *diskSIP = new QStandardItem(QString("%1").arg(disk, 5, 'f', 2));
+        oneRow.insert(col++, diskSIP);
+
+        tape = fa->getPledgedTape();
+        QStandardItem *tapeSIP = new QStandardItem(QString("%1").arg(tape, 5, 'f', 2));
+        oneRow.insert(col++, tapeSIP);
+
+        // the difference
+        double diff =  100 * (fa->getPledgedCPU() - fa->getRequiredCPU()) / fa->getRequiredCPU();
+        QStandardItem *cpuSID = new QStandardItem(QString("%1").arg(diff, 5, 'f', 0));
+        if (diff < -20)
+            cpuSID->setForeground(QBrush(Qt::red));
+        else
+            cpuSID->setForeground(QBrush(Qt::green));
+        oneRow.insert(col++, cpuSID);
+
+        diff =  100 * (fa->getPledgedDisk() - fa->getRequiredDisk()) / fa->getRequiredDisk();
+        QStandardItem *diskSID = new QStandardItem(QString("%1").arg(diff, 5, 'f', 0));
+        if (diff < -20)
+            diskSID->setForeground(QBrush(Qt::red));
+        else
+            diskSID->setForeground(QBrush(Qt::green));
+        oneRow.insert(col++, diskSID);
+
+        if (fa->getRequiredTape() != 0.0)
+            diff =  100 * (fa->getPledgedTape() - fa->getRequiredTape()) / fa->getRequiredTape();
+        else
+            diff = 0.0;
+        QStandardItem *tapeSID = new QStandardItem(QString("%1").arg(diff, 5, 'f', 0));
+        if (diff < -20)
+            tapeSID->setForeground(QBrush(Qt::red));
+        else
+            tapeSID->setForeground(QBrush(Qt::green));
+        oneRow.insert(col++, tapeSID);
+
         mModel->insertRow(row, oneRow);
-        for (qint32 index = 0; index <= kConC; index++)
+        for (qint32 index = 0; index < col; index++)
             mModel->item(row, index)->setTextAlignment(Qt::AlignRight | Qt::AlignVCenter);
         oneRow.clear();
         row++;
     }
+
+    // the horizontal headers
 
     mModel->setHorizontalHeaderItem(kStatC, new QStandardItem(tr("Status")));
     mModel->setHorizontalHeaderItem(kFAC,   new QStandardItem(tr("Funding Agency")));
@@ -98,126 +209,17 @@ void ALICE::drawTable()
     mT1Required.setObjectName(QString("Required Resources at T1"));
     mT2Required.setObjectName(QString("Required Resources at T2"));
 
-    // calculate requirements, display pledges and calculate (-requirements + pledges) / requirements
-
-    QList<QStandardItem*> lcpuRColumn;
-    QList<QStandardItem*> ldiskRColumn;
-    QList<QStandardItem*> ltapeRColumn;
-    QList<QStandardItem*> lcpuPColumn;
-    QList<QStandardItem*> ldiskPColumn;
-    QList<QStandardItem*> ltapePColumn;
-    QList<QStandardItem*> lcpuDColumn;
-    QList<QStandardItem*> ldiskDColumn;
-    QList<QStandardItem*> ltapeDColumn;
-
-    for (FundingAgency *fa : mFAs) {
-        double cpuR;
-        double diskR;
-        double tapeR;
-        QString faName = fa->name();
-        if (faName == "CERN") {
-            cpuR  = mT0Required.getCPU();
-            diskR = mT0Required.getDisk();
-            tapeR = mT0Required.getTape();
-        } else {
-            double mult = fa->contrib() / 100.;
-            double multT = fa->contribT() / 100.;
-            if (fa->name().left(1) == "-") {
-                mult  = 0.0;
-                multT = 0.0;
-            }
-            cpuR  = (mT1Required.getCPU()  + mT2Required.getCPU())  * mult;
-            diskR = (mT1Required.getDisk() + mT2Required.getDisk()) * mult;
-            tapeR = (mT1Required.getTape() + mT2Required.getTape()) * multT;
-        }
-        // the requirements
-        fa->setRequired(cpuR, diskR, tapeR);
-        QStandardItem *cpuSIR = new QStandardItem(QString("%1").arg(cpuR, 5, 'f', 2));
-        cpuSIR->setTextAlignment(Qt::AlignRight | Qt::AlignVCenter);
-        lcpuRColumn.append(cpuSIR);
-        QStandardItem *diskSIR = new QStandardItem(QString("%1").arg(diskR, 5, 'f', 2));
-        diskSIR->setTextAlignment(Qt::AlignRight | Qt::AlignVCenter);
-        ldiskRColumn.append(diskSIR);
-        QStandardItem *tapeSIR = new QStandardItem(QString("%1").arg(tapeR, 5, 'f', 2));
-        tapeSIR->setTextAlignment(Qt::AlignRight | Qt::AlignVCenter);
-        ltapeRColumn.append(tapeSIR);
-
-        // the pledges
-        QStandardItem *cpuSIP = new QStandardItem(QString("%1").arg(fa->getPledgedCPU(), 5, 'f', 2));
-        cpuSIP->setTextAlignment(Qt::AlignRight | Qt::AlignVCenter);
-        lcpuPColumn.append(cpuSIP);
-        QStandardItem *diskSIP = new QStandardItem(QString("%1").arg(fa->getPledgedDisk(), 5, 'f', 2));
-        diskSIP->setTextAlignment(Qt::AlignRight | Qt::AlignVCenter);
-        ldiskPColumn.append(diskSIP);
-        QStandardItem *tapeSIP = new QStandardItem(QString("%1").arg(fa->getPledgedTape(), 5, 'f', 2));
-        tapeSIP->setTextAlignment(Qt::AlignRight | Qt::AlignVCenter);
-        ltapePColumn.append(tapeSIP);
-
-        // the difference
-        double diff =  100 * (fa->getPledgedCPU() - fa->getRequiredCPU()) / fa->getRequiredCPU();
-        QStandardItem *cpuSID = new QStandardItem(QString("%1").arg(diff, 5, 'f', 0));
-        cpuSID->setTextAlignment(Qt::AlignRight | Qt::AlignVCenter);
-        if (diff < -20)
-            cpuSID->setForeground(QBrush(Qt::red));
-        else
-            cpuSID->setForeground(QBrush(Qt::green));
-        lcpuDColumn.append(cpuSID);
-        diff =  100 * (fa->getPledgedDisk() - fa->getRequiredDisk()) / fa->getRequiredDisk();
-        QStandardItem *diskSID = new QStandardItem(QString("%1").arg(diff, 5, 'f', 0));
-        diskSID->setTextAlignment(Qt::AlignRight | Qt::AlignVCenter);
-        if (diff < -20)
-            diskSID->setForeground(QBrush(Qt::red));
-        else
-            diskSID->setForeground(QBrush(Qt::green));
-        ldiskDColumn.append(diskSID);
-        if (fa->getRequiredTape() != 0.0)
-            diff =  100 * (fa->getPledgedTape() - fa->getRequiredTape()) / fa->getRequiredTape();
-        else
-            diff = 0.0;
-        QStandardItem *tapeSID = new QStandardItem(QString("%1").arg(diff, 5, 'f', 0));
-        tapeSID->setTextAlignment(Qt::AlignRight | Qt::AlignVCenter);
-        if (diff < -20)
-            tapeSID->setForeground(QBrush(Qt::red));
-        else
-            tapeSID->setForeground(QBrush(Qt::green));
-        ltapeDColumn.append(tapeSID);
-    }
-
-    mModel->insertColumn(kConC + 1, lcpuRColumn);
     mModel->setHorizontalHeaderItem(kConC + 1, new QStandardItem(tr("Required CPU (kHEPSPEC06)")));
-    mModel->insertColumn(kConC + 2, ldiskRColumn);
     mModel->setHorizontalHeaderItem(kConC + 2, new QStandardItem(tr("Required Disk (PB)")));
-    mModel->insertColumn(kConC + 3, ltapeRColumn);
     mModel->setHorizontalHeaderItem(kConC + 3, new QStandardItem(tr("Required Tape (PB)")));
 
-    // the pledges
-
-    mModel->insertColumn(kConC + 4, lcpuPColumn);
     mModel->setHorizontalHeaderItem(kConC + 4, new QStandardItem(tr("Pledged CPU (kHEPSPEC06)")));
-    mModel->insertColumn(kConC + 5, ldiskPColumn);
     mModel->setHorizontalHeaderItem(kConC + 5, new QStandardItem(tr("Pledged Disk (PB)")));
-    mModel->insertColumn(kConC + 6, ltapePColumn);
     mModel->setHorizontalHeaderItem(kConC + 6, new QStandardItem(tr("Pledged Tape (PB)")));
 
-    // difference required and pledges
-
-
-    mModel->insertColumn(kConC + 7, lcpuDColumn);
     mModel->setHorizontalHeaderItem(kConC + 7, new QStandardItem(tr("Diff CPU (%)")));
-    mModel->insertColumn(kConC + 8, ldiskDColumn);
     mModel->setHorizontalHeaderItem(kConC + 8, new QStandardItem(tr("Diff Disk (%)")));
-    mModel->insertColumn(kConC + 9, ltapeDColumn);
     mModel->setHorizontalHeaderItem(kConC + 9, new QStandardItem(tr("Diff Tape (%)")));
-
-    lcpuRColumn.clear();
-    ldiskRColumn.clear();
-    ltapeRColumn.clear();
-    lcpuPColumn.clear();
-    ldiskPColumn.clear();
-    ltapePColumn.clear();
-    lcpuDColumn.clear();
-    ldiskDColumn.clear();
-    ltapeDColumn.clear();
 
     // the last row
 
@@ -296,20 +298,158 @@ void ALICE::drawTable()
 }
 
 //===========================================================================
+double ALICE::getPledged(Tier::TierCat tier, Resources::Resources_type restype, const QString &year)
+{
+    // retrieve required resources
+
+    if (year != mCurrentPledgedYear)
+            readRebus(year);
+
+    Resources res;
+    switch (tier) {
+    case Tier::kT0:
+        res = mT0Pledged;
+        break;
+    case Tier::kT1:
+        res = mT1Pledged;
+        break;
+    case Tier::kT2:
+        res = mT2Pledged;
+        break;
+    case Tier::kTOTS:
+        res = mToPledged;
+        break;
+    default:
+        break;
+    }
+    double rv = 0.0;
+    switch (restype) {
+    case Resources::kCPU:
+        rv = res.getCPU();
+        break;
+    case Resources::kDISK:
+        rv = res.getDisk();
+        break;
+    case Resources::kTAPE:
+        rv = res.getTape();
+        break;
+    default:
+        break;
+    }
+
+    return rv;
+}
+
+//===========================================================================
+double ALICE::getRequired(Tier::TierCat tier, Resources::Resources_type restype, const QString &year)
+{
+    // retrieve required resources
+
+    if (year != mCurrentRequirementYear)
+            readRequirements(year);
+
+    Resources res;
+    switch (tier) {
+    case Tier::kT0:
+        res = mT0Required;
+        break;
+    case Tier::kT1:
+        res = mT1Required;
+        break;
+    case Tier::kT2:
+        res = mT2Required;
+        break;
+    case Tier::kTOTS:
+        res = mToRequired;
+        break;
+    default:
+        break;
+    }
+    double rv = 0.0;
+    switch (restype) {
+    case Resources::kCPU:
+        rv = res.getCPU();
+        break;
+    case Resources::kDISK:
+        rv = res.getDisk();
+        break;
+    case Resources::kTAPE:
+        rv = res.getTape();
+        break;
+    default:
+        break;
+    }
+
+    return rv;
+}
+
+//===========================================================================
+double ALICE::getUsed(Tier::TierCat tier, Resources::Resources_type restype, const QDate date)
+{
+    // retrieve required resources
+
+    if (date != mCurrentUsedDate)
+            readMonthlyReport(date);
+
+    Resources res;
+    switch (tier) {
+    case Tier::kT0:
+        res = mT0Used;
+        break;
+    case Tier::kT1:
+        res = mT1Used;
+        break;
+    case Tier::kT2:
+        res = mT2Used;
+        break;
+    case Tier::kTOTS:
+        res = mToUsed;
+        break;
+    default:
+        break;
+    }
+    double rv = 0.0;
+    switch (restype) {
+    case Resources::kCPU:
+        rv = res.getCPU();
+        break;
+    case Resources::kDISK:
+        rv = res.getDisk();
+        break;
+    case Resources::kTAPE:
+        rv = res.getTape();
+        break;
+    default:
+        break;
+    }
+
+    return rv;
+}
+
+//===========================================================================
 bool ALICE::readRebus(const QString &year)
 {
 //    Associate sites to Funding Agencies and collect the pledges
 
+    if (mFAs.isEmpty()) {
+        readGlanceData(year);
+        organizeFA();
+    }
     mT0Pledged.clear();
     mT1Pledged.clear();
     mT2Pledged.clear();
+    mToPledged.clear();
     mT0Pledged.setObjectName(QString("Pledged Resources at T0 in %1").arg(year));
     mT1Pledged.setObjectName(QString("Pledged Resources at T1 in %1").arg(year));
     mT2Pledged.setObjectName(QString("Pledged Resources at T2 in %1").arg(year));
+    mToPledged.setObjectName(QString("Pledged Resources in total in %1").arg(year));
 
-    QFile csvFile(QString(":/data/%1/pledges.csv").arg(year));
-    if (!csvFile.open(QIODevice::ReadOnly))
+    QString filename = QString(":/data/%1/pledges.csv").arg(year);
+    QFile csvFile(filename);
+    if (!csvFile.open(QIODevice::ReadOnly)) {
+        qWarning() << "file" << filename << "not found";
         return false;
+    }
     // read the header row and find the column of ALICE V0
     qint32 aliceColumn = -1;
     QString line = csvFile.readLine();
@@ -335,14 +475,25 @@ bool ALICE::readRebus(const QString &year)
             Resources::Storage_Unit sunit;
             Resources res("pledged");
             res.clear();
+            Tier::TierCat cat;
+            if (strList.at(0) == "Tier 0")
+                cat = Tier::kT0;
+            else if (strList.at(0) == "Tier 1")
+                cat = Tier::kT1;
+            else if (strList.at(0) == "Tier 2")
+                cat = Tier::kT2;
+            else
+                qWarning() << "Tier category" << strList.at(0) << "not recognized";
+
             FundingAgency *fa = searchFA(strList.at(1));
+
             QString sCPU = strList.at(aliceColumn + diff);
             if (strList.at(4 + diff) == "HEP-SPEC06")
                 cunit = Resources::HEPSPEC06;
             else
                 qFatal("revise the csv format");
             res.setCPU(sCPU.toDouble(), cunit);
-            addCPU(res.getCPU());
+            addCPU(cat, res.getCPU());
             line = csvFile.readLine();
             strList = line.split(',');
             qint32 diff = strList.size() - nbColumn;
@@ -352,13 +503,8 @@ bool ALICE::readRebus(const QString &year)
             else
                 qFatal("revise the csv format");
             res.setDisk(sDisk.toDouble(), sunit);
-            addDisk(res.getDisk());
-            Tier::TierCat cat = Tier::kT2;
-            if (strList.at(0) == "Tier 0" || strList.at(0) == "Tier 1") {
-                if (strList.at(0) == "Tier 0")
-                    cat = Tier::kT0;
-                else
-                    cat = Tier::kT1;
+            addDisk(cat, res.getDisk());
+            if (cat == Tier::kT0 || cat == Tier::kT1) {
                 line = csvFile.readLine();
                 strList = line.split(',');
                 qint32 diff = strList.size() - nbColumn;
@@ -369,7 +515,7 @@ bool ALICE::readRebus(const QString &year)
                     qFatal("revise the csv format");
                 res.setTape(sTape.toDouble(), sunit);
 
-                addTape(res.getTape());
+                addTape(cat, res.getTape());
             }
             QString site = strList.at(2);
             site.remove("\"");
@@ -383,14 +529,36 @@ bool ALICE::readRebus(const QString &year)
     }
     csvFile.close();
 
-    if (MainWindow::isDebug())
-        for (FundingAgency *fa : mFAs)
-            fa->list();
-    if (MainWindow::isDebug()) {
-        mT0Pledged.list();
-        mT1Pledged.list();
-        mT2Pledged.list();
+    // now register the sites (CE and SE) which are not member of WLCG
+    Resources res;
+    res.clear(); // no resources pledged
+    for (FundingAgency *fa : mFAs) {
+        if (!fa->hasTier() && fa->name().left(1) != "-") {
+            QList<QString> ceList = Naming::instance()->find(fa->name(), Naming::kCEML);
+            QList<QString> seList = Naming::instance()->find(fa->name(), Naming::kSE);
+            for (QString site : ceList) {
+                Tier *tier = new Tier(site, Tier::kT2, res, fa);
+                tier->addCE(site);
+                for (QString se : seList) {
+                    if (se.contains(site))
+                        tier->addSE(se);
+                }
+                fa->addTier(tier);
+            }
+        }
     }
+    mToPledged.setCPU( mT0Pledged.getCPU()  + mT1Pledged.getCPU()  + mT2Pledged.getCPU());
+    mToPledged.setDisk(mT0Pledged.getDisk() + mT1Pledged.getDisk() + mT2Pledged.getDisk());
+    mToPledged.setTape(mT0Pledged.getTape() + mT1Pledged.getTape() + mT2Pledged.getTape());
+
+    if (MainWindow::isDebug()) {
+        for (FundingAgency *fa : mFAs)
+            qInfo() << fa->list();
+        qInfo() <<  mT0Pledged.list();
+        qInfo() <<  mT1Pledged.list();
+        qInfo() <<  mT2Pledged.list();
+    }
+    mCurrentPledgedYear = year;
     return true;
 }
 
@@ -499,6 +667,11 @@ bool ALICE::readRequirements(const QString &year)
     mT0Required.clear();
     mT1Required.clear();
     mT2Required.clear();
+    mToRequired.clear();
+    mT0Pledged.setObjectName(QString("Required Resources at T0 in %1").arg(year));
+    mT1Pledged.setObjectName(QString("Required Resources at T1 in %1").arg(year));
+    mT2Pledged.setObjectName(QString("Required Resources at T2 in %1").arg(year));
+    mToPledged.setObjectName(QString("Required Resources in total in %1").arg(year));
 
     const QString cpuName("CPU");
     const QString diskName("Disk");
@@ -506,6 +679,7 @@ bool ALICE::readRequirements(const QString &year)
     const QString t0Name("T0");
     const QString t1Name("T1");
     const QString t2Name("T2");
+    const QString toName("Total smooth");
 
     QFile csvFile(QString(":/data/%1/Requirements.csv").arg(year));
     if (!csvFile.open(QIODevice::ReadOnly))
@@ -534,6 +708,7 @@ bool ALICE::readRequirements(const QString &year)
     qint32 t0Row      = -1;
     qint32 t1Row      = -1;
     qint32 t2Row      = -1;
+    qint32 toRow      = -1;
     qint32 row = 0;
 
     while (!csvFile.atEnd()) {
@@ -545,6 +720,8 @@ bool ALICE::readRequirements(const QString &year)
             t1Row = row;
         else if (strList.first() == t2Name)
             t2Row = row;
+        else if (strList.first() == toName)
+            toRow = row;
         row++;
     }
     csvFile.seek(0);
@@ -572,13 +749,15 @@ bool ALICE::readRequirements(const QString &year)
             mT2Required.setCPU(cpu);
             mT2Required.setDisk(disk);
             mT2Required.setTape(tape);
+        }  else if (row == toRow) {
+            mToRequired.setCPU(cpu);
+            mToRequired.setDisk(disk);
+            mToRequired.setTape(tape);
         }
         row++;
     }
 
     csvFile.close();
-
-
 
     if (MainWindow::isDebug()) {
         mT0Required.list();
@@ -586,14 +765,63 @@ bool ALICE::readRequirements(const QString &year)
         mT2Required.list();
     }
 
+    // calculates the contribution of each FA
+
+    qint32 norm = countMOPayers();
+    if (norm == 0) // the following is not needed when plots are invoked
+        return true;
+    norm -= searchFA("CERN")->payers();  // CERN is not counted in the M&O payers
+    qint32 normT = countMOPayersT();
+
+    for (FundingAgency *fa : mFAs) {
+        double cpuR;
+        double diskR;
+        double tapeR;
+        if (fa->name() == "CERN") {
+            cpuR  = mT0Required.getCPU();
+            diskR = mT0Required.getDisk();
+            tapeR = mT0Required.getTape();
+        } else if (fa->name().left(1) == "-") {
+            cpuR  = 0.0;
+            diskR = 0.0;
+            tapeR = 0.0;
+        } else {
+            double frac = (double)fa->payers() / norm;
+            fa->setContrib(frac * 100);
+            double fracT = (double)fa->payers() / normT;
+            fa->setContribT(fracT * 100);
+            cpuR  = (mT1Required.getCPU()  + mT2Required.getCPU())  * frac;
+            diskR = (mT1Required.getDisk() + mT2Required.getDisk()) * frac;
+            if (fa->hasT1())
+                tapeR = (mT1Required.getTape() + mT2Required.getTape()) * fracT;
+            else
+                tapeR = 0.0;
+        }
+        fa->setRequired(cpuR, diskR, tapeR);
+    }
+
+    mCurrentRequirementYear = year;
     return true;
 }
 
 //===========================================================================
 bool ALICE::readMonthlyReport(const QDate &date)
 {
+    // read the montly report
+
+    if (mFAs.isEmpty()) {
+        readGlanceData(QString("%1").arg(date.year()));
+        organizeFA();
+        readRebus(QString("%1").arg(date.year()));
+    }
+
+    mT0Used.clear();
+    mT1Used.clear();
+    mT2Used.clear();
+    mToUsed.clear();
     qint32 hours = date.daysInMonth() * 24;
     QString month = date.toString("MMMM");
+    mCurrentUsedDate = date;
 
     // First read the monthly report provided by EGI (http://accounting.egi.eu/egi.php)
     // one file for T0+T1s and one for T2s
@@ -602,8 +830,6 @@ bool ALICE::readMonthlyReport(const QDate &date)
     // line 1-4: header to be skipped
     // line 5: header TIER1,"alice","atlas","cms","lhcb",Total
     // last line      Total, xxxxx (HEPSPEC06-hours)
-
-    double totalCPU = 0.0;
 
     QString fileName = QString(":/data/%1/%2/TIER1_TIER1_sum_normcpu_TIER1_VO.csv").arg(date.year()).arg(date.month());
     QFile  csvFile(fileName);
@@ -626,6 +852,9 @@ bool ALICE::readMonthlyReport(const QDate &date)
         index++;
     }
 
+    double cpuUSumT0 = 0.0;
+    double cpuUSumT1 = 0.0;
+
     while(!csvFile.atEnd()) {
         line = csvFile.readLine();
         strList = line.split(',');
@@ -640,16 +869,21 @@ bool ALICE::readMonthlyReport(const QDate &date)
                 qWarning() << Q_FUNC_INFO << site << " not found!";
                 exit(1);
             }
-            Resources *res = new Resources;
+            Resources res;
             double rcpu = cpu / hours / 1000.;
-            totalCPU += rcpu;
-            res->setCPU(rcpu, Resources::kHEPSPEC06);
-            tier->addUsedResources(month, res);
+            res.setCPU(rcpu, Resources::kHEPSPEC06);
+            tier->setUsedCPU(month, res.getCPU());
+            if (site == "CH-CERN")
+                cpuUSumT0 += rcpu;
+            else
+                cpuUSumT1 += rcpu;
         }
     }
     csvFile.close();
+    mT0Used.setCPU(cpuUSumT0, Resources::kHEPSPEC06);
+    mT1Used.setCPU(cpuUSumT1, Resources::kHEPSPEC06);
 
-    // format T2s
+    // format T2s from http://accounting.egi.eu/reptier2.php
     // line 1-4: header to be skipped
     // line 5: COUNTRY,FEDERATION,2016 CPU Pledge (HEPSPEC06),pledge inc. efficiency (HEPSPEC06-Hrs),SITE,alice,atlas,cms,lhcb,Total,delivered as % of pledge
     fileName = QString(":/data/%1/%2/reptier2.csv").arg(date.year()).arg(date.month());
@@ -672,6 +906,9 @@ bool ALICE::readMonthlyReport(const QDate &date)
         }
         index++;
     }
+
+    double cpuUSumT2 = 0.0;
+
     while(!csvFile.atEnd()) {
         line = csvFile.readLine();
         strList = line.split(',');
@@ -679,54 +916,80 @@ bool ALICE::readMonthlyReport(const QDate &date)
         if (country == "")
             continue;
         QString federation = strList.at(1);
-        QString site = strList.at(aliceColumn - 1);
         if (federation.contains("Total"))
             break;
         if (strList.at(aliceColumn) != "0") {
             QString scpu  = strList.at(aliceColumn);
             double cpu = scpu.toDouble();
             FundingAgency *fa = searchFA(country);
-            qDebug() << Q_FUNC_INFO << country;
+            if (!fa) {
+                qWarning() << country << "is not an ALICE member";
+                continue;
+            }
             Tier *tier = fa->search(federation, true);
             if (!tier) {
-                qWarning() << Q_FUNC_INFO << federation << " not found!";
-                exit(1);
+                qDebug() << date << line;
+                qWarning() << federation << " not found!";
+                continue;
             }
-            Resources *res = new Resources;
+            Resources res;
             double rcpu = cpu / hours / 1000.;
-            totalCPU += rcpu;
-            res->setCPU(rcpu, Resources::kHEPSPEC06);
-            tier->addUsedResources(month, res);
+            res.setCPU(rcpu, Resources::kHEPSPEC06);
+            tier->setUsedCPU(month, res.getCPU());
+            cpuUSumT2 += rcpu;
         }
     }
     csvFile.close();
+    mT2Used.setCPU(cpuUSumT2, Resources::kHEPSPEC06);
+    mToUsed.setCPU(cpuUSumT0 + cpuUSumT1 + cpuUSumT2, Resources::kHEPSPEC06);
 
-    // complete the table
-    QList<QStandardItem*> lcpuUColumn;
-    QList<QStandardItem*> ldiskUColumn;
-    QList<QStandardItem*> ltapeUColumn;
-    for (FundingAgency *fa : mFAs) {
-        double cpuU  = fa->getUsed(month)->getCPU();
-        double diskU = fa->getUsed(month)->getDisk();
-        double tapeU = fa->getUsed(month)->getTape();
-        QStandardItem *cpuSIU  = new QStandardItem(QString("%1").arg(cpuU,  5, 'f', 2));
-        QStandardItem *diskSIU = new QStandardItem(QString("%1").arg(diskU, 5, 'f', 2));
-        QStandardItem *tapeSIU = new QStandardItem(QString("%1").arg(tapeU, 5, 'f', 2));
-        lcpuUColumn.append(cpuSIU);
-        ldiskUColumn.append(diskSIU);
-        ltapeUColumn.append(tapeSIU);
+    for (FundingAgency * fa : mFAs)
+        fa->computeUsedCPU(month);
+
+    // read the CPU usage delivered by MonALISA
+    // get it from http://alimonitor.cern.ch/display?annotation.enabled=true&imgsize=1024x600&interval.max=0&interval.min=2628000000&page=jobResUsageSum_time_si2k&download_data_csv=true
+    // where max and min are in milliseconds in the past, relative to current timestamp, so 0 = current time
+    // see the speadsheet data/MillisecondsFromToday.numbers to compute min/max for each month
+    // name of the csv file is CPU_Usage.csv
+    // format:
+    // header: Time xxxx
+    // where xxxx is the name of the CE
+    // TimeStamp, data (in GB)
+    // take the average over time
+
+    fileName = QString(":/data/%1/%2/CPU_Usage.csv").arg(date.year()).arg(date.month());
+    csvFile.setFileName(fileName);
+    if(!csvFile.open(QIODevice::ReadOnly))
+        return false;
+    line = csvFile.readLine();
+    QStringList listCE = line.split(',');
+    listCE.removeAt(0); // removes the Time column
+    QHash<QString, double> cpuUsage;
+    qint32 linecount = 0;
+    while (!csvFile.atEnd()) {
+        QString line = csvFile.readLine();
+        QStringList valuesList = line.split(',');
+        valuesList.removeAt(0);
+        for (qint32 column = 0; column < valuesList.size(); column++) {
+            QString key = listCE.at(column);
+            key.remove("\n");
+            QString value = valuesList.at(column);
+            cpuUsage[key] += value.toDouble();
+        }
+        linecount++;
     }
-    QStandardItem *totalcpuSIU  = new QStandardItem(QString("%1").arg(totalCPU,  5, 'f', 2));
-    lcpuUColumn.append(totalcpuSIU);
-    mModel->appendColumn(lcpuUColumn);
-    QString header = QString("%1 \n Used CPU (kHEPSPEC06)").arg(month);
-    mModel->setHorizontalHeaderItem(mModel->columnCount() -1, new QStandardItem(header));
-    mModel->appendColumn(ldiskUColumn);
-    header = QString("%1 \n Used Disk (PB)").arg(month);
-    mModel->setHorizontalHeaderItem(mModel->columnCount() - 1, new QStandardItem(header));
-    mModel->appendColumn(ltapeUColumn);
-    header = QString("%1 \n Used Tape (PB)").arg(month);
-    mModel->setHorizontalHeaderItem(mModel->columnCount() - 1, new QStandardItem(header));
+    csvFile.close();
+    QHashIterator<QString, double> cpuit(cpuUsage);
+    while (cpuit.hasNext()) {
+        cpuit.next();
+        cpuUsage[cpuit.key()] = cpuit.value() * 4.2 / hours / linecount / 10000; //units = KHEPSpec06; 4.2 converts KSI2K into HEPSpec06
+        FundingAgency *fa = searchCE(cpuit.key());
+        if (fa)
+            fa->addUsedCPU(month,cpuUsage[cpuit.key()]);
+        else if (MainWindow::isDebug())
+            qWarning() << "Ignore CE" << cpuit.key() << "providing" << cpuUsage[cpuit.key()] << "kHEPSpec06";
+    }
+
 
     // read the disk usage delivered by MonALISA
     // get it from: http://alimonitor.cern.ch/display?imgsize=1024x600&interval.max=27630000000&interval.min=30301200000&job_stats.owner=brijesh&modules=SE%2Fhist_used&page=SE%2Fhist&download_data_csv=true
@@ -739,7 +1002,6 @@ bool ALICE::readMonthlyReport(const QDate &date)
     // TimeStamp, data (in GB)
     // take the average over time
 
-    QHash<QString, double> storages; // QString is the SE name taken from the header of the file
 
     fileName = QString(":/data/%1/%2/Disk_Tape_Usage.csv").arg(date.year()).arg(date.month());
     csvFile.setFileName(fileName);
@@ -747,13 +1009,131 @@ bool ALICE::readMonthlyReport(const QDate &date)
         return false;
     line = csvFile.readLine();
     QStringList listSE = line.split(',');
-    for (QString se : listSE )
-         storages[se] = 0.;
-    qDebug() << Q_FUNC_INFO << mFAs;
-
-
+    listSE.removeAt(0); // removes the Time column
+    QHash<QString, double> diskUsage;
+    linecount = 0;
+    while (!csvFile.atEnd()) {
+        QString line = csvFile.readLine();
+        QStringList valuesList = line.split(',');
+        valuesList.removeAt(0);
+        for (qint32 column = 0; column < valuesList.size(); column++) {
+            QString key = listSE.at(column);
+            key.remove("\n");
+            QString value = valuesList.at(column);
+            diskUsage[key] += value.toDouble();
+        }
+        linecount++;
+    }
     csvFile.close();
-    // consider making a dictionary with all the names
+
+    double tapeUSumT0 = 0.0;
+    double tapeUSumT1 = 0.0;
+    double diskUSumT0 = 0.0;
+    double diskUSumT1 = 0.0;
+    double diskUSumT2 = 0.0;
+
+    QHashIterator<QString, double> stoit(diskUsage);
+    while (stoit.hasNext()) {
+        stoit.next();
+        diskUsage[stoit.key()] = stoit.value() / linecount / 1000000; //units = PB
+        FundingAgency *fa = searchSE(stoit.key());
+        QString se = stoit.key();
+        double storage = diskUsage[se];
+        Resources::Resources_type diskOrTape = fa->addUsedDiskTape(month, se, storage);
+        if (diskOrTape == Resources::kTAPE) {
+            if (se.contains("CERN"))
+                tapeUSumT0 += storage;
+            else
+                tapeUSumT1 += storage;
+        } else if (diskOrTape == Resources::kDISK) {
+            if (se.contains("CERN"))
+                diskUSumT0 += storage;
+            else if (se.contains("CCIN2P3") ||
+                     se.contains("CNAF") ||
+                     se.contains("FZK") ||
+                     se.contains("KISTI") ||
+                     se.contains("NDGF") ||
+                     se.contains("RAL") ||
+                     se.contains("RRC") ||
+                     se.contains("SARA"))
+                diskUSumT1 += storage;
+            else
+                diskUSumT2 += storage;
+        }
+    }
+
+    mT0Used.setDisk(diskUSumT0, Resources::PB);
+    mT1Used.setDisk(diskUSumT1, Resources::PB);
+    mT2Used.setDisk(diskUSumT2, Resources::PB);
+    mT0Used.setTape(tapeUSumT0, Resources::PB);
+    mT1Used.setTape(tapeUSumT1, Resources::PB);
+    mToUsed.setDisk(diskUSumT0 + diskUSumT1 + diskUSumT2, Resources::PB);
+    mToUsed.setTape(tapeUSumT0 + tapeUSumT1, Resources::PB);
+
+
+    if (!mDrawTable)
+        return true;
+
+    // complete the table
+    double cpuUSum    = 0.0;
+    double cpuUSumML  = 0.0;
+    double diskUSumML = 0.0;
+    double tapeUSumML = 0.0;
+
+    QList<QStandardItem*> lcpuUColumn;
+    QList<QStandardItem*> lcpuUColumnML;
+    QList<QStandardItem*> ldiskUColumnML;
+    QList<QStandardItem*> ltapeUColumnML;
+    for (FundingAgency *fa : mFAs) {
+        if (fa->name().left(1) == "-")
+            continue;
+        double cpuU  = fa->getUsedCPU(month);
+        cpuUSum += cpuU;
+        double cpuUML  = fa->getUsedCPUML(month);
+        cpuUSumML += cpuUML;
+        double diskUML = fa->getUsedDiskML(month);
+        diskUSumML += diskUML;
+        double tapeUML = fa->getUsedTapeML(month);
+        tapeUSumML += tapeUML;
+        QStandardItem *cpuSIU    = new QStandardItem(QString("%1").arg(cpuU,    5, 'f', 2));
+        QStandardItem *cpuSIUML  = new QStandardItem(QString("%1").arg(cpuUML,  5, 'f', 2));
+        QStandardItem *diskSIUML = new QStandardItem(QString("%1").arg(diskUML, 5, 'f', 2));
+        QStandardItem *tapeSIUML = new QStandardItem(QString("%1").arg(tapeUML, 5, 'f', 2));
+        lcpuUColumn.append(cpuSIU);
+        lcpuUColumnML.append(cpuSIUML);
+        ldiskUColumnML.append(diskSIUML);
+        ltapeUColumnML.append(tapeSIUML);
+    }
+
+    mToUsed.setCPU(cpuUSum);
+    mToUsed.setDisk(diskUSumML);
+    mToUsed.setTape(tapeUSumML);
+
+    QStandardItem *totalcpuSIU  = new QStandardItem(QString("%1").arg(cpuUSum,  5, 'f', 2));
+    lcpuUColumn.append(totalcpuSIU);
+    mModel->appendColumn(lcpuUColumn);
+    QString header = QString("%1 \n Used CPU (kHEPSPEC06)").arg(month);
+    mModel->setHorizontalHeaderItem(mModel->columnCount() -1, new QStandardItem(header));
+
+    QStandardItem *totalcpuSIUML  = new QStandardItem(QString("%1").arg(cpuUSumML,  5, 'f', 2));
+    lcpuUColumnML.append(totalcpuSIUML);
+    mModel->appendColumn(lcpuUColumnML);
+    header = QString("%1 \n ML Used CPU (kHEPSPEC06)").arg(month);
+    mModel->setHorizontalHeaderItem(mModel->columnCount() -1, new QStandardItem(header));
+
+    QStandardItem *totaldiskSIUML  = new QStandardItem(QString("%1").arg(diskUSumML,  5, 'f', 2));
+    ldiskUColumnML.append(totaldiskSIUML);
+    mModel->appendColumn(ldiskUColumnML);
+    header = QString("%1 \n ML Used Disk (PB)").arg(month);
+    mModel->setHorizontalHeaderItem(mModel->columnCount() - 1, new QStandardItem(header));
+
+    QStandardItem *totaltapeSIUML  = new QStandardItem(QString("%1").arg(tapeUSumML,  5, 'f', 2));
+    ltapeUColumnML.append(totaltapeSIUML);
+    mModel->appendColumn(ltapeUColumnML);
+    header = QString("%1 \n ML Used Tape (PB)").arg(month);
+    mModel->setHorizontalHeaderItem(mModel->columnCount() - 1, new QStandardItem(header));
+
+
     return true;
 }
 
@@ -797,6 +1177,21 @@ void ALICE::saveCSV(const QString &year) const
 }
 
 //===========================================================================
+FundingAgency *ALICE::searchCE(const QString &ce) const
+{
+    // searches to which FA belongs the storage ce
+    for (FundingAgency *fa : mFAs) {
+        if (fa->name().left(1) == "-") // skip FAs included in a cluster
+            continue;
+        if (fa->searchCE(ce)) {
+            return fa;
+        }
+    }
+    return Q_NULLPTR;
+
+}
+
+//===========================================================================
 FundingAgency *ALICE::searchFA(const QString &n) const
 {
     // searches funding agency by name
@@ -817,7 +1212,22 @@ FundingAgency *ALICE::searchFA(const QString &n) const
            return fa;
            break;
         }
-    qWarning() << Q_FUNC_INFO << QString("FA %1 not found").arg(name);
+    if (MainWindow::isDebug())
+         qWarning() << QString("FA %1 not found").arg(name);
+    return Q_NULLPTR;
+}
+
+//===========================================================================
+FundingAgency *ALICE::searchSE(const QString &se) const
+{
+    // searches to which FA belongs the storage se
+    for (FundingAgency *fa : mFAs) {
+        if (fa->name().left(1) == "-") // skip FAs included in a cluster
+            continue;
+        if (fa->searchSE(se)) {
+            return fa;
+        }
+    }
     return Q_NULLPTR;
 }
 
@@ -839,7 +1249,7 @@ Tier *ALICE::searchTier(const QString &n) const
 }
 
 //===========================================================================
-void ALICE::setCEandSE(const QString &year)
+void ALICE::setCEandSE()
 {
     // set the CE and SE with ML and WLCG naming to FAs
 
@@ -937,11 +1347,28 @@ void ALICE::organizeFA()
 }
 
 //===========================================================================
-ALICE::ALICE(QObject *parent) : QObject(parent)
+ALICE::ALICE(QObject *parent) : QObject(parent),
+    mDrawTable(true),  mCurrentPledgedYear(""), mCurrentRequirementYear("")
 {
     // ctor
     setObjectName("The ALICE Collaboration");
     mModel = new QStandardItemModel(this);
+    qDeleteAll(mFAs.begin(), mFAs.end());
+    mFAs.clear();
+    qDeleteAll(mLastRow.begin(), mLastRow.end());
+    mLastRow.clear();
+    mT0Pledged.clear();
+    mT1Pledged.clear();
+    mT2Pledged.clear();
+    mToPledged.clear();
+    mT0Required.clear();
+    mT1Required.clear();
+    mT2Required.clear();
+    mToRequired.clear();
+    mT0Used.clear();
+    mT1Used.clear();
+    mT2Used.clear();
+    mToUsed.clear();
 }
 
 //===========================================================================
@@ -950,7 +1377,7 @@ qint32 ALICE::countMOPayers() const
     // count all the M&O payers
     qint32 count = 0;
     for (FundingAgency *fa : mFAs)
-        if (fa->objectName().left(1) != "*")
+        if (fa->objectName().left(1) != "-")
             count += fa->payers();
     return count;
 }

@@ -4,9 +4,14 @@
 #
 #-------------------------------------------------
 
-QT       += core gui
+QT       += core gui widgets printsupport
+QT       += charts
+QT       += network
 
-greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
+contains(TARGET, qml.*) {
+    QT += qml quick
+}
+
 
 TARGET = ComputingResources
 TEMPLATE = app
@@ -21,7 +26,8 @@ SOURCES += main.cpp\
     consolewidget.cpp \
     mymdiarea.cpp \
     tier.cpp \
-    naming.cpp
+    naming.cpp \
+    pltablemodel.cpp
 
 HEADERS  += mainwindow.h \
     logger.h \
@@ -31,7 +37,8 @@ HEADERS  += mainwindow.h \
     consolewidget.h \
     mymdiarea.h \
     tier.h \
-    naming.h
+    naming.h \
+    pltablemodel.h
 
 RESOURCES += \
     images.qrc \

@@ -73,7 +73,7 @@ Naming* Naming::instance()
 //===========================================================================
 const QList<QString> Naming::find(const QString &faName, Elements el)
 {
-  // retrieve the ML CE element name for Funding Agency faName
+  // retrieve the ML CE/SE element name for Funding Agency faName
 
     QString fa = faName;
     fa.remove("*");

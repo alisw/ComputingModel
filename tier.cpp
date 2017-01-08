@@ -47,14 +47,12 @@ void Tier::addSEs(const QList<QString> &list)
 }
 
 //===========================================================================
-void Tier::addUsedResources(QString &month, Resources *res)
+void Tier::setUsedCPU(QString &month, double cpu)
 {
-    // set the used resources during month
+    // set the used CPU resources during month
     Resources used;
-    used.setCPU(getUsedCPU(month) + res->getCPU());
-    used.setDisk(getUsedDisk(month) + res->getDisk());
-    used.setTape(getUsedTape(month) + res->getTape());
-    mUsed.insert(month, used);
+    used.setCPU(getUsedCPU(month) + cpu);
+    mUsed[month] = used;
 }
 
 //===========================================================================
@@ -67,10 +65,30 @@ void Tier::clearUsed(const QString &month)
 }
 
 //===========================================================================
+bool Tier::findCE(const QString &ce)
+{
+    // check if ce is in the CE list
+    bool rv = false;
+    if (mMLCENames.indexOf(ce) != -1)
+        rv = true;
+    return rv;
+}
+
+//===========================================================================
+bool Tier::findSE(const QString &se)
+{
+    // check if se is in the SE list
+    bool rv = false;
+    if (mMLSENames.indexOf(se) != -1)
+        rv = true;
+    return rv;
+}
+
+//===========================================================================
 QString Tier::list() const
 {
     // list the tier information
-    QString text = QString("           ▻ %1 is a Tier %2 and has:\n").arg(mWLCGName).arg(mTierCategory);
+    QString text = QString("\n           ▻ %1 is a Tier %2 and has:\n").arg(mWLCGName).arg(mTierCategory);
     text.append(mResources.list());
 
     text.append("ML CEs: ");
