@@ -520,8 +520,8 @@ bool ALICE::readRebus(const QString &year)
             QString site = strList.at(2);
             site.remove("\"");
             Tier *t = new Tier(site, cat, res, fa);
-            QList<QString> ceList = Naming::instance()->find(fa->name(), Naming::kCEML);
-            QList<QString> seList = Naming::instance()->find(fa->name(), Naming::kSE);
+            QList<QString> ceList = Naming::instance()->find(fa->name(), site, Naming::kCEML);
+            QList<QString> seList = Naming::instance()->find(fa->name(), site, Naming::kSE);
             t->addCEs(ceList);
             t->addSEs(seList);
             fa->addTier(t);
@@ -534,8 +534,8 @@ bool ALICE::readRebus(const QString &year)
     res.clear(); // no resources pledged
     for (FundingAgency *fa : mFAs) {
         if (!fa->hasTier() && fa->name().left(1) != "-") {
-            QList<QString> ceList = Naming::instance()->find(fa->name(), Naming::kCEML);
-            QList<QString> seList = Naming::instance()->find(fa->name(), Naming::kSE);
+            QList<QString> ceList = Naming::instance()->find(fa->name(), "", Naming::kCEML);
+            QList<QString> seList = Naming::instance()->find(fa->name(), "", Naming::kSE);
             for (QString site : ceList) {
                 Tier *tier = new Tier(site, Tier::kT2, res, fa);
                 tier->addCE(site);
@@ -1138,6 +1138,28 @@ bool ALICE::readMonthlyReport(const QDate &date)
 }
 
 //===========================================================================
+Tier *ALICE::search(const QString &name)
+{
+    // search CE or SE within FAs.
+    if (mFAs.isEmpty()){
+        readGlanceData("2017");
+        organizeFA();
+        readRebus("2017");
+    }
+    Tier *rv = Q_NULLPTR;
+    for (FundingAgency *fa : mFAs) {
+        if (fa->name().left(1) == "-") // skip FAs included in a cluster
+            continue;
+        if (fa->searchCE(name))
+            return fa->searchCE(name);
+        else if(fa->searchSE(name))
+            return fa->searchSE(name);
+    }
+    return rv;
+
+}
+
+//===========================================================================
 void ALICE::saveCSV(const QString &year) const
 {
     // save the table in a csv file
@@ -1232,9 +1254,13 @@ FundingAgency *ALICE::searchSE(const QString &se) const
 }
 
 //===========================================================================
-Tier *ALICE::searchTier(const QString &n) const
+Tier *ALICE::searchTier(const QString &n)
 {
     // search a Tier by name in the list of FAs
+
+//    if (mFAs.isEmpty()) {
+//        readRebus("2017"); // FIXME
+//    }
 
     Tier * rv = Q_NULLPTR;
     for (FundingAgency *fa : mFAs) {
@@ -1257,7 +1283,7 @@ void ALICE::setCEandSE()
         QString name = fa->name();
         if (name.left(1) == "-")
             continue;
-        QList<QString> tiers = Naming::instance()->find(fa->name(), Naming::kCEWLCG);
+        QList<QString> tiers = Naming::instance()->find(fa->name(), "any",  Naming::kCEWLCG);
         for (QString t : tiers) {
             if (t.contains("T1"))
                 qDebug() <<fa->name() <<  t;

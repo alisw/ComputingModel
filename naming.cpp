@@ -15,12 +15,14 @@ Naming::Naming(QObject *parent) : QObject(parent)
     // read the namings from a csv file
     // FORMAT: FA; SE; CE in ML; CE in WLCG
 
+    mDict.clear();
     QString fileName = QString(":/data/NamingDictionary.csv");
     QFile csvFile(fileName);
     if (!csvFile.open(QIODevice::ReadOnly)) {
         qWarning() << QString("File %1 cannot be opened").arg(fileName);
         exit(1);
     }
+
     // read the header
     QString line = csvFile.readLine();
 
@@ -33,18 +35,13 @@ Naming::Naming(QObject *parent) : QObject(parent)
         QString ceWLCG = strlist[kCEWLCG];
         ceWLCG.remove("\r\n");
 
-        if (se != "") {
-            se.prepend("xSEx");
-            mDict.insert(fa, se);
-        }
-        if (ceML != "") {
-            ceML.prepend("xCEMLx");
-            mDict.insert(fa, ceML);
-        }
-        if (ceWLCG != "") {
-            ceWLCG.prepend("xCEWLCGx");
-            mDict.insert(fa, ceWLCG);
-        }
+        QVector<QString> *vec = new QVector<QString>(4);
+        vec->insert(kFA,     fa);
+        vec->insert(kSE,     se);
+        vec->insert(kCEML,   ceML);
+        vec->insert(kCEWLCG, ceWLCG);
+
+        mDict.append(vec);
     }
 }
 
@@ -52,8 +49,8 @@ Naming::Naming(QObject *parent) : QObject(parent)
 Naming::~Naming()
 {
     // dtor, deletes all elements of the hash
-//    qDeleteAll(dict.begin(), dict.end());
-
+    qDeleteAll(mDict.begin(), mDict.end());
+    mDict.clear();
 }
 
 //===========================================================================
@@ -71,7 +68,7 @@ Naming* Naming::instance()
 }
 
 //===========================================================================
-const QList<QString> Naming::find(const QString &faName, Elements el)
+const QList<QString> Naming::find(const QString &faName, QString wlcg, Elements el)
 {
   // retrieve the ML CE/SE element name for Funding Agency faName
 
@@ -79,28 +76,11 @@ const QList<QString> Naming::find(const QString &faName, Elements el)
     fa.remove("*");
     QList<QString> rv;
     rv.clear();
-    QString search;
-    switch (el) {
-    case kSE:
-        search = "xSEx";
-        break;
-    case kCEML:
-        search = "xCEMLx";
-        break;
-    case kCEWLCG:
-        search = "xCEWLCGx";
-        break;
-    default:
-        break;
-    }
 
-    QList<QString> values = mDict.values(fa);
-    for (int i = 0; i < values.size(); i++) {
-        QString test = values.at(i);
-        if (test.contains(search)) {
-            test.remove(search);
-            rv.append(test);
-        }
+    for (QVector<QString> *vect : mDict) {
+        if (vect->at(kFA) == fa && vect->at(kCEWLCG) == wlcg)
+            if (!vect->at(el).isEmpty())
+                rv.append(vect->at(el));
     }
 
     return rv;

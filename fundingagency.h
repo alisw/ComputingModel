@@ -46,9 +46,9 @@ public:
     bool       hasTier() const {return mTiers.size() > 0 ? true : false; }
     QString    name() const           { return objectName(); }
     qint32     payers() const         { return mMandOPayers; }
-    Tier*      search(const QString &n, bool aliasing = false) const;
-    bool       searchCE(const QString &ce) const;
-    bool       searchSE(const QString &se) const;
+    Tier       *search(const QString &n, bool aliasing = false) const;
+    Tier       *searchCE(const QString &ce) const;
+    Tier       *searchSE(const QString &se) const;
     void       setContrib(double val) { mContrib = val; }
     void       setContribT(double val);
     void       setRequired(double cpu, double disk, double tape);

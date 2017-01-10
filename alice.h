@@ -39,7 +39,7 @@ public:
     void                 loadGlanceData(const QString & /*year*/) { qWarning() << Q_FUNC_INFO << "not implemented"; }
     void                 loadRequirements(const QString &/*year*/) { qWarning() << Q_FUNC_INFO << "not implemented"; }
     void                 loadPledges(const QString & /*year*/) { qWarning() << Q_FUNC_INFO << "not implemented"; }
-    QStandardItemModel * getModel() { return mModel; }
+    QStandardItemModel   *getModel() { return mModel; }
     double               getPledged(Tier::TierCat tier, Resources::Resources_type restype, const QString &year);
     double               getRequired(Tier::TierCat tier, Resources::Resources_type restype, const QString &year);
     double               getUsed(Tier::TierCat tier, Resources::Resources_type restype, const QDate date);
@@ -48,11 +48,12 @@ public:
     void                 organizeFA();
     bool                 readRequirements(const QString &year);
     bool                 readMonthlyReport(const QDate &date);
+    Tier                 *search(const QString &name);
+    FundingAgency        *searchCE(const QString &ce) const;
     void                 saveCSV(const QString &year) const;
-    FundingAgency*       searchCE(const QString &ce) const;
-    FundingAgency*       searchFA(const QString &n) const;
-    FundingAgency*       searchSE(const QString &se) const;
-    Tier*                searchTier(const QString &n) const;
+    FundingAgency        *searchFA(const QString &n) const;
+    FundingAgency        *searchSE(const QString &se) const;
+    Tier*                searchTier(const QString &n);
     void                 setCEandSE();
     void                 setDrawTable(bool val) { mDrawTable = val; }
 

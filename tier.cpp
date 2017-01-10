@@ -88,14 +88,17 @@ bool Tier::findSE(const QString &se)
 QString Tier::list() const
 {
     // list the tier information
-    QString text = QString("\n           ▻ %1 is a Tier %2 and has:\n").arg(mWLCGName).arg(mTierCategory);
+    QString text = QString("\n");
+    text.append(QString("\n            ▻ %1 is a Tier %2 and has:\n").arg(mWLCGName).arg(mTierCategory));
     text.append(mResources.list());
 
+    text.append("\n");
     text.append("ML CEs: ");
     for (QString ce : mMLCENames)
         text.append(QString("%1, ").arg(ce));
     text.remove(text.lastIndexOf(", "), 1);
 
+    text.append("\n");
     text.append("\nML SEs: ");
     for (QString se : mMLSENames)
         text.append(QString("%1, ").arg(se));

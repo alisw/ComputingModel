@@ -15,15 +15,15 @@ public:
     enum Elements {kFA, kSE, kCEML, kCEWLCG};
     static Naming *instance();
 
-    const QList<QString> find(const QString &faName, Elements el);
+    const QList<QString> find(const QString &faName, QString wlcg, Elements el);
 
 private:
     explicit Naming(QObject *parent = 0);
     ~Naming();
     Naming(const Naming&);
 
-    static Naming*              mInstance; // the unique instance of the object
-    QMultiHash<QString,QString> mDict;     // key is the FA name  and values are the various naming
+    static Naming               *mInstance; // the unique instance of the object
+    QList<QVector<QString>*>     mDict;     // list of (FA, SEML, CEML, SiteWLVG)
 };
 
 #endif // NAMING_H

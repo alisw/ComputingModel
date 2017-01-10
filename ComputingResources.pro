@@ -12,10 +12,16 @@ contains(TARGET, qml.*) {
     QT += qml quick
 }
 
+CONFIG(release, debug|release):DEFINES += QT_NO_DEBUG_OUTPUT
 
 TARGET = ComputingResources
 TEMPLATE = app
 
+include("QFontIcon/QFontIcon.pri")
+
+INCLUDEPATH += QFontIcon
+
+ICON = images/logo-alice.icns
 
 SOURCES += main.cpp\
         mainwindow.cpp \

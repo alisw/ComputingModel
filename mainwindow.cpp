@@ -29,6 +29,7 @@
 #include <QScatterSeries>
 #include <QSslConfiguration>
 #include <QStatusBar>
+#include <QToolBar>
 #include <QValueAxis>
 #include <QVBoxLayout>
 #include <QVXYModelMapper>
@@ -38,6 +39,7 @@
 #include "mainwindow.h"
 #include "mymdiarea.h"
 #include "pltablemodel.h"
+#include "qfonticon.h"
 
 QT_CHARTS_USE_NAMESPACE
 
@@ -53,6 +55,7 @@ MainWindow::MainWindow(QWidget *parent)
     mDownLoadText   = Q_NULLPTR;
     mNetworkManager = Q_NULLPTR;
     mProgressBar    = Q_NULLPTR;
+    mTableConsol    = Q_NULLPTR;
     mURL            = "";
     setGeometry(0,0, 50, 25);
 
@@ -84,6 +87,20 @@ MainWindow::MainWindow(QWidget *parent)
 
     QString message = tr("Welcome to ALICE Computing Resources tool");
     statusBar()->showMessage(message);
+
+    // the toolbars
+    QToolBar *tb = new QToolBar(this);
+
+    // icons if at http://fontawesome.io/icons/
+    // the print icon (prints the current widow)
+
+    QAction *pract = new QAction(QFontIcon::icon(0xf02f), "print");
+    pract->setWhatsThis("print current window");
+    connect(pract, SIGNAL(triggered(bool)), this, SLOT(printCurrentWindow()));
+    tb->addAction(pract);
+
+    addToolBar(tb);
+
 
     qint32 w = 1800;
     qint32 h = 1000;
@@ -153,21 +170,20 @@ void MainWindow::parsePlotUrlFile(PlotOptions opt)
     mPlDataName.clear();
 
     QVector<qint64> dates;
-    stream.readLineInto(&line); // skip the header line
+    stream.readLineInto(&line); //the header line
     QStringList strList = line.split(",");
     for (QString str : strList)
         mPlDataName.append(str);
     while (stream.readLineInto(&line)) {
-        QVector<double> *dataVec = new QVector<double>(3);
+        QVector<double> *dataVec = new QVector<double>(strList.size());
         QStringList strlist = line.split(",");
         QString date = strlist.at(0);
         dates.append(date.toLongLong());
-        QString sdata1 = strlist.at(1);
-        double data1 = sdata1.toDouble() / 1E9; // in PB;
-        dataVec->replace(1, data1);
-        QString sdata2 = strlist.at(2);
-        double data2 = sdata2.toDouble() / 1E9; // in PB
-        dataVec->replace(2, data2);
+        for (qint32 index = 1; index < strList.size(); index++) {
+            QString sdata = strlist.at(index);
+            double data   = sdata.toDouble();
+            dataVec->replace(index, data);
+        }
         mPlData.append(dataVec);
     }
     stream.reset();
@@ -183,7 +199,13 @@ void MainWindow::parsePlotUrlFile(PlotOptions opt)
 
     switch (opt) {
     case kRegisteredDataProfile:
-        plData(opt);
+        plRegisteredData(opt);
+        break;
+    case kTierEfficiencyProfile:
+        plTierEfficiency(kTierEfficiencyProfile);
+        break;
+    case kUserEfficiencyProfile:
+        plUserEfficiency(kUserEfficiencyProfile);
         break;
     case kPledgesProfile:
         saveData(opt);
@@ -231,8 +253,27 @@ void MainWindow::validateDates(PlotOptions opt)
         plProfile(kRegisteredDataProfile);
         break;
     }
+    case kTierEfficiencyProfile:
+    {
+        mURL = QString("http://alimonitor.cern.ch/display");
+        mURL += "?annotation.enabled=true&imgsize=1280x700";
+        mURL += QString("&interval.max=%1&interval.min=%2").arg(diffS).arg(diffE);
+        mURL += "&page=jobResUsageSum_eff_time&download_data_csv=true";
+        plProfile(kTierEfficiencyProfile);
+        break;
+    }
+    case kUserEfficiencyProfile:
+    {
+        mURL = QString("http://alimonitor.cern.ch/display");
+        mURL += "?annotation.enabled=true&imgsize=1280x700";
+        mURL += QString("&interval.max=%1&interval.min=%2").arg(diffS).arg(diffE);
+        mURL += "&page=jpu%2Fefficiency&download_data_csv=true";
+        plProfile(kUserEfficiencyProfile);
+        break;
+    }
     default:
         break;
+
     }
 }
 
@@ -496,31 +537,9 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
 {
     // do something when a key is pressed
 
-    switch (event->key()) {
+    switch (event->key())
     case 80: {// key cmd-p to print the active window
-        QMdiSubWindow *sw = mMdiArea->currentSubWindow();
-        //FIXME: directory name
-        QString oFileName = QString("/Users/schutz/Desktop/%1.pdf").arg(sw->windowTitle());
-        QPdfWriter writer(oFileName);
-        writer.setPageSize(QPagedPaintDevice::A4);
-        QPainter painter(&writer);
-
-        QPixmap pix = sw->grab();
-        qint32 horg = sw->height();
-        qint32 worg = sw->width();
-        double scale = 0.9;
-        qint32 w    = painter.window().width()  * scale;
-        qint32 h    = painter.window().width() * scale * horg / worg ;
-        qint32 xoff = (painter.window().width() / 2) - (w / 2);
-        qint32 yoff = (painter.window().height() / 2) - (h / 2);
-        sw->resize(w, h);
-        painter.drawPixmap(xoff, yoff, w, h, pix);
-        painter.end();
-        sw->resize(worg, horg);
-        QMessageBox *mb = new QMessageBox(this);
-        mb->setText(QString("Window saved as %1").arg(oFileName));
-        mb->show();
-    }
+        printCurrentWindow();
         break;
     default:
         break;
@@ -579,13 +598,19 @@ void MainWindow::plot(qint32 opt)
     case kUsageProfile:
         plProfile(kUsageProfile);
         break;
+    case kTierEfficiencyProfile:
+        selectDates(kTierEfficiencyProfile);
+        break;
+    case kUserEfficiencyProfile:
+        selectDates(kUserEfficiencyProfile);
+        break;
     default:
         break;
    }
 }
 
 //===========================================================================
-void MainWindow::plData(PlotOptions opt)
+void MainWindow::plRegisteredData(PlotOptions opt)
 {
     // plot data (mPlData) as Area plot
     // data is a list of QVector rows,
@@ -601,13 +626,13 @@ void MainWindow::plData(PlotOptions opt)
     QString sopt = me.key(opt);
     sopt.remove("k");
     sopt.remove("Profile");
-    chart->setTitle(QString("ALICE %1 during past year").arg(sopt));
+    chart->setTitle(QString("ALICE %1").arg(sopt));
 
     int columns = mPlData.at(0)->size();
     int rows   = mPlData.size();
 
     QDateTimeAxis *axisX = new QDateTimeAxis;
-    axisX->setTickCount(12); // 12 months
+    axisX->setTickCount(12);
     axisX->setFormat("MM-yyyy");
     axisX->setTitleText("Date");
     chart->addAxis(axisX, Qt::AlignBottom);
@@ -615,15 +640,7 @@ void MainWindow::plData(PlotOptions opt)
     QValueAxis *axisY = new QValueAxis;
     axisY->setTickCount(9);
     axisY->setLabelFormat("%i");
-    QString title;
-    switch (opt) {
-    case kRegisteredDataProfile:
-        title = "Registered Data (PB)";
-        break;
-    default:
-        break;
-    }
-    axisY->setTitleText(title);
+    axisY->setTitleText("Registered Data (PB)");
     chart->addAxis(axisY, Qt::AlignLeft);
 
     QLineSeries *lowerSeries = Q_NULLPTR;
@@ -641,9 +658,9 @@ void MainWindow::plData(PlotOptions opt)
             double y;
             if (lowerSeries) {
                 const QVector<QPointF>& points = lowerSeries->pointsVector();
-                y = points[irow].y() + row->at(col);
+                y = points[irow].y() + row->at(col) / 1E9; //change to PB
             } else
-                y = row->at(col);
+                y = row->at(col) / 1E9; //change to PB
             if (y > ymax)
                 ymax = y;
             upperSeries->append(x, y);
@@ -668,6 +685,8 @@ void MainWindow::plData(PlotOptions opt)
     }
     axisY->setMax(ymax);
     axisY->setMin(0.0);
+
+    QString title("Registered Data Profile");
     for (QMdiSubWindow *sw : mMdiArea->subWindowList())
         if(sw->windowTitle() == title) {
             mMdiArea->removeSubWindow(sw);
@@ -684,9 +703,171 @@ void MainWindow::plData(PlotOptions opt)
 }
 
 //===========================================================================
-void MainWindow::getDataFromWeb(PlotOptions opt)
+void MainWindow::plTierEfficiency(MainWindow::PlotOptions opt)
 {
-    // plot the registered data profile during the past year
+    // plot the efficiency per Tier (Tier0, Tiers1, Tiers2)
+    // data is a list of QVector rows,
+    //      column 0 is a date (imn ms since...) for x axis and
+    //      colums 1,.... are the y values
+
+    // the data are in mPLData
+    // the name of colums are in mPLDataName
+
+
+    QChart *chart = new QChart();
+    chart->setTheme(QChart::ChartThemeBrownSand);
+    QMetaEnum me = QMetaEnum::fromType<PlotOptions>();
+    QString sopt = me.key(opt);
+    sopt.remove("k");
+    sopt.remove("Profile");
+    chart->setTitle(QString("ALICE %1").arg(sopt));
+
+    QDateTimeAxis *axisX = new QDateTimeAxis;
+    axisX->setTickCount(12);
+    axisX->setFormat("MM-yyyy");
+    axisX->setTitleText("Date");
+    chart->addAxis(axisX, Qt::AlignBottom);
+
+    QValueAxis *axisY = new QValueAxis;
+    axisY->setTickCount(9);
+    axisY->setLabelFormat("%i");
+    axisY->setTitleText("Efficiency (%)");
+    axisY->setMax(100);
+    chart->addAxis(axisY, Qt::AlignLeft);
+
+
+    QVector<Tier::TierCat> tcat(mPlDataName.size() - 1); // omit the time column
+    qint32 colIndex = 0;
+    for (QString ce : mPlDataName) {
+        Tier *t = ALICE::instance().search(ce);
+        if (!t) {
+            tcat.insert(colIndex, Tier::kT2);
+        } else {
+            Tier::TierCat cat = t->category();
+            tcat.insert(colIndex, cat);
+        }
+        colIndex++;
+    }
+
+    QLineSeries *seriesT0 = new QLineSeries;
+    seriesT0->setName("T0");
+
+    QLineSeries *seriesT1 = new QLineSeries;
+    seriesT1->setName("T1");
+
+    QLineSeries *seriesT2 = new QLineSeries;
+    seriesT2->setName("T2");
+
+    QVector<double> effTiers(3);
+    QVector<qint32> normTiers(3);
+
+    QDateTime today(QDate::currentDate());
+    double xmin = today.toMSecsSinceEpoch();
+
+    for (QVector<double> *valVec : mPlData) {
+        effTiers.replace(Tier::kT0, 0);
+        effTiers.replace(Tier::kT1, 0);
+        effTiers.replace(Tier::kT2, 0);
+        normTiers.replace(Tier::kT0, 0);
+        normTiers.replace(Tier::kT1, 0);
+        normTiers.replace(Tier::kT2, 0);
+        double x = valVec->at(0);
+        if (x < xmin)
+            xmin = x;
+        for (qint32 colIndex = 1; colIndex < valVec->size(); colIndex++) {
+            Tier::TierCat cat = tcat.at(colIndex);
+            double val = valVec->at(colIndex);
+            if ( val > 0.0) {
+                effTiers.replace(cat, effTiers.at(cat) + val);
+                normTiers.replace(cat, normTiers.at(cat) + 1);
+            }
+        }
+        if (normTiers.at(Tier::kT0) > 0) {
+            effTiers.replace(Tier::kT0, effTiers.at(Tier::kT0) / normTiers.at(Tier::kT0));
+            seriesT0->append(x, effTiers.at(Tier::kT0));
+        }
+        if (normTiers.at(Tier::kT1) > 0) {
+            effTiers.replace(Tier::kT1, effTiers.at(Tier::kT1) / normTiers.at(Tier::kT1));
+            seriesT1->append(x, effTiers.at(Tier::kT1));
+        }
+        if (normTiers.at(Tier::kT1) > 1) {
+            effTiers.replace(Tier::kT2, effTiers.at(Tier::kT2) / normTiers.at(Tier::kT2));
+            seriesT2->append((qint64)x, effTiers.at(Tier::kT2));
+        }
+    }
+
+    chart->addSeries(seriesT0);
+    seriesT0->attachAxis(axisY);
+    seriesT0->attachAxis(axisX);
+
+    chart->addSeries(seriesT1);
+    seriesT1->attachAxis(axisY);
+    seriesT1->attachAxis(axisX);
+
+    chart->addSeries(seriesT2);
+    seriesT2->attachAxis(axisY);
+    seriesT2->attachAxis(axisX);
+
+    today.setMSecsSinceEpoch(xmin);
+    axisX->setMin(today);
+
+    QString title("Tier Efficiency Profile");
+    for (QMdiSubWindow *sw : mMdiArea->subWindowList())
+        if(sw->windowTitle() == title) {
+            mMdiArea->removeSubWindow(sw);
+            sw->close();
+        }
+    QChartView *chartView = new QChartView();
+    chartView->setAttribute(Qt::WA_DeleteOnClose);
+    chartView->setWindowTitle(title);
+    chartView->setRenderHint(QPainter::Antialiasing);
+    chartView->setMinimumSize(640, 480);
+    chartView->setChart(chart);
+
+    mMdiArea->addSubWindow(chartView)->show();
+}
+
+//===========================================================================
+void MainWindow::plUserEfficiency(MainWindow::PlotOptions opt)
+{
+    // plot the efficiency per user
+    // data is a list of QVector rows,
+    //      column 0 is a date (imn ms since...) for x axis and
+    //      colums 1,.... are the y values
+
+    // the data are in mPLData
+
+
+    QChart *chart = new QChart();
+    chart->setTheme(QChart::ChartThemeBrownSand);
+    QMetaEnum me = QMetaEnum::fromType<PlotOptions>();
+    QString sopt = me.key(opt);
+    sopt.remove("k");
+    sopt.remove("Profile");
+    chart->setTitle(QString("ALICE %1").arg(sopt));
+
+    int columns = mPlData.at(0)->size();
+    int rows   = mPlData.size();
+
+    QDateTimeAxis *axisX = new QDateTimeAxis;
+    axisX->setTickCount(12);
+    axisX->setFormat("MM-yyyy");
+    axisX->setTitleText("Date");
+    chart->addAxis(axisX, Qt::AlignBottom);
+
+    QValueAxis *axisY = new QValueAxis;
+    axisY->setTickCount(9);
+    axisY->setLabelFormat("%i");
+    QString title = "Efficiency (%)";
+    axisY->setTitleText(title);
+    axisY->setMax(100);
+    chart->addAxis(axisY, Qt::AlignLeft);
+}
+
+//===========================================================================
+void MainWindow:: getDataFromWeb(PlotOptions opt)
+{
+    // plot the registered data profile
 
     QWidget *w = new QWidget();
     w->setAttribute(Qt::WA_DeleteOnClose);
@@ -994,6 +1175,35 @@ void MainWindow::plProfile(PlotOptions opt, Resources::Resources_type type)
 }
 
 //===========================================================================
+void MainWindow::printCurrentWindow() const
+{
+    // print the current window
+    QMdiSubWindow *sw = mMdiArea->currentSubWindow();
+    //FIXME: directory name
+    QString oFileName = QString("/Users/schutz/Desktop/%1.pdf").arg(sw->windowTitle());
+    QPdfWriter writer(oFileName);
+    writer.setPageSize(QPagedPaintDevice::A4);
+    QPainter painter(&writer);
+
+    QPixmap pix = sw->grab();
+    qint32 horg = sw->height();
+    qint32 worg = sw->width();
+    double scale = 0.9;
+    qint32 w    = painter.window().width()  * scale;
+    qint32 h    = painter.window().width() * scale * horg / worg ;
+    qint32 xoff = (painter.window().width() / 2) - (w / 2);
+    qint32 yoff = (painter.window().height() / 2) - (h / 2);
+    sw->resize(w, h);
+    painter.drawPixmap(xoff, yoff, w, h, pix);
+    painter.end();
+    sw->resize(worg, horg);
+    QMessageBox *mb = new QMessageBox;
+    mb->setAttribute(Qt::WA_DeleteOnClose);
+    mb->setText(QString("Window saved as %1").arg(oFileName));
+    mb->show();
+}
+
+//===========================================================================
 void MainWindow::plProfile(PlotOptions opt)
 {
     // plot CPU, disk and tape required profile
@@ -1032,6 +1242,18 @@ void MainWindow::plProfile(PlotOptions opt)
         plProfile(kUsageProfile, Resources::kCPU);
         plProfile(kUsageProfile, Resources::kDISK);
         plProfile(kUsageProfile, Resources::kTAPE);
+
+        break;
+    }
+    case kTierEfficiencyProfile:
+    {
+        getDataFromWeb(kTierEfficiencyProfile);
+
+        break;
+    }
+    case kUserEfficiencyProfile:
+    {
+        getDataFromWeb(kUserEfficiencyProfile);
 
         break;
     }
@@ -1229,6 +1451,7 @@ void MainWindow::readMonthlyReport(QDate date)
 //===========================================================================
 void MainWindow::saveData(PlotOptions opt)
 {
+    Q_UNUSED(opt);
     QString filename="Data.txt";
     QFile file( filename );
     if ( file.open(QIODevice::ReadWrite) )

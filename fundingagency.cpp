@@ -217,25 +217,25 @@ Tier *FundingAgency::search(const QString &n, bool aliasing) const
 }
 
 //===========================================================================
-bool FundingAgency::searchCE(const QString &ce) const
+Tier *FundingAgency::searchCE(const QString &ce) const
 {
     // check if se belongs to this fa
 
     for (Tier *t : mTiers)
         if( t->findCE(ce) )
-            return true;
-    return false;
+            return t;
+    return Q_NULLPTR;
 }
 
 //===========================================================================
-bool FundingAgency::searchSE(const QString &se) const
+Tier *FundingAgency::searchSE(const QString &se) const
 {
     // check if se belongs to this fa
 
     for (Tier *t : mTiers)
         if( t->findSE(se) )
-            return true;
-    return false;
+            return t;
+    return Q_NULLPTR;
 }
 
 //===========================================================================

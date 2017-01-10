@@ -1,5 +1,6 @@
 <RCC>
     <qresource prefix="/">
         <file>images/Grid_sites_monitoring_map_-_ALICE_Grid_Monitoring_with_MonALISA.png</file>
+        <file>fontawesome.ttf</file>
     </qresource>
 </RCC>
