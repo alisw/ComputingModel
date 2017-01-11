@@ -15,6 +15,7 @@ public:
 
     void          addData(const QString &year, QVector<double> *vec);
     void          addData(const QDateTime &date, QVector<double> *vec);
+    void          addData(QVector<double> *vec);
     void          addMapping(QString color, QRect area);
     void          clearMapping() { mMapping.clear(); }
     int           columnCount(const QModelIndex &parent = QModelIndex()) const;

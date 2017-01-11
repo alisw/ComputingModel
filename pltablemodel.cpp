@@ -17,7 +17,7 @@ PlTableModel::PlTableModel(QObject *parent) : QAbstractTableModel(parent)
 //===========================================================================
 void PlTableModel::addData(const QString &year, QVector<double> *vec)
 {
-    // add one row of data
+    // add one row of data: year, double,....
 
     QDateTime date;
     date.setDate(QDate(year.toInt(), 4, 1)); // 1 April year
@@ -33,7 +33,7 @@ void PlTableModel::addData(const QString &year, QVector<double> *vec)
 //===========================================================================
 void PlTableModel::addData(const QDateTime &date, QVector<double> *vec)
 {
-    // add one row of data
+    // add one row of data; date, double,....
 
     qint32 size = vec->size() + 2;
     QVector<double> *dataVec = new QVector<double>(size);
@@ -43,6 +43,13 @@ void PlTableModel::addData(const QDateTime &date, QVector<double> *vec)
         dataVec->replace(index + 2, vec->at(index));
     mData.append(dataVec);
 
+}
+
+//===========================================================================
+void PlTableModel::addData(QVector<double> *vec)
+{
+    // add one row of data: double, ....
+    mData.append(vec);
 }
 
 //===========================================================================

@@ -319,13 +319,13 @@ void MainWindow::createActions()
 //    }
 
     // pledges loading action
-    dataDir.setPath(":/data/");
-    for (QString subDir : dataDir.entryList(QDir::Dirs)) {
-        QAction *act = new QAction(this);
-        act->setText(QString("%1 pledged").arg(subDir));
-        connect(act, &QAction::triggered, this, [subDir, this]{ loadPledges(subDir); });
-        mPledgedResources.append(act);
-    }
+//    dataDir.setPath(":/data/");
+//    for (QString subDir : dataDir.entryList(QDir::Dirs)) {
+//        QAction *act = new QAction(this);
+//        act->setText(QString("%1 pledged").arg(subDir));
+//        connect(act, &QAction::triggered, this, [subDir, this]{ loadPledges(subDir); });
+//        mPledgedResources.append(act);
+//    }
 
     // monthly reports reading action
     dataDir.setPath(":/data/");
@@ -416,20 +416,20 @@ void MainWindow::createMenu()
     // Actions
     mActionsMenu = menuBar()->addMenu(tr("&Actions"));
 
-    QMenu *readG = new QMenu(tr("Load Glance data"));
-    for (QAction * act : mGlanceData)
-        readG->addAction(act);
-    mActionsMenu->addMenu(readG);
+//    QMenu *readG = new QMenu(tr("Load Glance data"));
+//    for (QAction * act : mGlanceData)
+//        readG->addAction(act);
+//    mActionsMenu->addMenu(readG);
 
-    QMenu *readRQ = new QMenu(tr("Load requirements"));
-    for (QAction * act : mRequiredResources)
-        readRQ->addAction(act);
-    mActionsMenu->addMenu(readRQ);
+//    QMenu *readRQ = new QMenu(tr("Load requirements"));
+//    for (QAction * act : mRequiredResources)
+//        readRQ->addAction(act);
+//    mActionsMenu->addMenu(readRQ);
 
-    QMenu *readPL = new QMenu(tr("Load Pledges"));
-    for (QAction * act : mPledgedResources)
-        readPL->addAction(act);
-    mActionsMenu->addMenu(readPL);
+//    QMenu *readPL = new QMenu(tr("Load Pledges"));
+//    for (QAction * act : mPledgedResources)
+//        readPL->addAction(act);
+//    mActionsMenu->addMenu(readPL);
 
     QMenu *doReqPle = new QMenu(tr("Requirements and Pledges"));
     for (QAction * act : mDoReqPle)
@@ -758,16 +758,27 @@ void MainWindow::plTierEfficiency(MainWindow::PlotOptions opt)
     QLineSeries *seriesT2 = new QLineSeries;
     seriesT2->setName("T2");
 
-    QVector<double> effTiers(3);
-    QVector<qint32> normTiers(3);
+    QVector<double> *avEffTiers = new QVector<double>(3);
+    QVector<qint32> avNormTiers(3);
+
+    avEffTiers->replace(Tier::kT0, 0.0);
+    avEffTiers->replace(Tier::kT1, 0.0);
+    avEffTiers->replace(Tier::kT2, 0.0);
+    avNormTiers.replace(Tier::kT0, 0);
+    avNormTiers.replace(Tier::kT1, 0);
+    avNormTiers.replace(Tier::kT2, 0);
 
     QDateTime today(QDate::currentDate());
     double xmin = today.toMSecsSinceEpoch();
 
+    QVector<double> effTiers(3);
+    QVector<qint32> normTiers(3);
+
+
     for (QVector<double> *valVec : mPlData) {
-        effTiers.replace(Tier::kT0, 0);
-        effTiers.replace(Tier::kT1, 0);
-        effTiers.replace(Tier::kT2, 0);
+        effTiers.replace(Tier::kT0, 0.0);
+        effTiers.replace(Tier::kT1, 0.0);
+        effTiers.replace(Tier::kT2, 0.0);
         normTiers.replace(Tier::kT0, 0);
         normTiers.replace(Tier::kT1, 0);
         normTiers.replace(Tier::kT2, 0);
@@ -780,6 +791,8 @@ void MainWindow::plTierEfficiency(MainWindow::PlotOptions opt)
             if ( val > 0.0) {
                 effTiers.replace(cat, effTiers.at(cat) + val);
                 normTiers.replace(cat, normTiers.at(cat) + 1);
+                avEffTiers->replace(cat, avEffTiers->at(cat) + val);
+                avNormTiers.replace(cat, avNormTiers.at(cat) + 1);
             }
         }
         if (normTiers.at(Tier::kT0) > 0) {
@@ -795,6 +808,20 @@ void MainWindow::plTierEfficiency(MainWindow::PlotOptions opt)
             seriesT2->append((qint64)x, effTiers.at(Tier::kT2));
         }
     }
+
+    avEffTiers->replace(Tier::kT0, avEffTiers->at(Tier::kT0) / avNormTiers.at(Tier::kT0));
+    avEffTiers->replace(Tier::kT1, avEffTiers->at(Tier::kT1) / avNormTiers.at(Tier::kT1));
+    avEffTiers->replace(Tier::kT2, avEffTiers->at(Tier::kT2) / avNormTiers.at(Tier::kT2));
+
+    PlTableModel *model = new PlTableModel();
+    model->setColRow(5, 1);
+    QVector<QString> headers(model->columnCount());
+    headers.replace(Tier::kT0 + 2, "Average efficiency at T0 (%)");
+    headers.replace(Tier::kT1 + 2, "Average efficiency at T1s (%)");
+    headers.replace(Tier::kT2 + 2, "Average efficiency at T2s (%)");
+    model->setHeader(headers);
+    QString dummy("1970");
+    model->addData(dummy, avEffTiers);
 
     chart->addSeries(seriesT0);
     seriesT0->attachAxis(axisY);
@@ -812,11 +839,7 @@ void MainWindow::plTierEfficiency(MainWindow::PlotOptions opt)
     axisX->setMin(today);
 
     QString title("Tier Efficiency Profile");
-    for (QMdiSubWindow *sw : mMdiArea->subWindowList())
-        if(sw->windowTitle() == title) {
-            mMdiArea->removeSubWindow(sw);
-            sw->close();
-        }
+
     QChartView *chartView = new QChartView();
     chartView->setAttribute(Qt::WA_DeleteOnClose);
     chartView->setWindowTitle(title);
@@ -824,7 +847,33 @@ void MainWindow::plTierEfficiency(MainWindow::PlotOptions opt)
     chartView->setMinimumSize(640, 480);
     chartView->setChart(chart);
 
-    mMdiArea->addSubWindow(chartView)->show();
+    QTableView *tableView = new QTableView;
+    tableView->setModel(model);
+    tableView->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+    tableView->resizeColumnsToContents();
+    tableView->setMaximumHeight(80);
+    tableView->hideColumn(0);
+    tableView->hideColumn(1);
+
+    QSplitter *splitter = new QSplitter(Qt::Vertical);
+    splitter->addWidget(tableView);
+    splitter->addWidget(chartView);
+
+    QVBoxLayout *allLayout = new QVBoxLayout();
+    allLayout->addWidget(splitter);
+
+    for (QMdiSubWindow *sw : mMdiArea->subWindowList())
+        if(sw->windowTitle() == title) {
+            mMdiArea->removeSubWindow(sw);
+            sw->close();
+        }
+
+    QWidget *allTogether = new QWidget();
+    allTogether->setWindowTitle(title);
+    allTogether->setLayout(allLayout);
+
+    mMdiArea->addSubWindow(allTogether)->show();
+    allTogether->setStyleSheet("background-color:white");
 }
 
 //===========================================================================
@@ -837,7 +886,6 @@ void MainWindow::plUserEfficiency(MainWindow::PlotOptions opt)
 
     // the data are in mPLData
 
-
     QChart *chart = new QChart();
     chart->setTheme(QChart::ChartThemeBrownSand);
     QMetaEnum me = QMetaEnum::fromType<PlotOptions>();
@@ -845,9 +893,6 @@ void MainWindow::plUserEfficiency(MainWindow::PlotOptions opt)
     sopt.remove("k");
     sopt.remove("Profile");
     chart->setTitle(QString("ALICE %1").arg(sopt));
-
-    int columns = mPlData.at(0)->size();
-    int rows   = mPlData.size();
 
     QDateTimeAxis *axisX = new QDateTimeAxis;
     axisX->setTickCount(12);
@@ -858,10 +903,166 @@ void MainWindow::plUserEfficiency(MainWindow::PlotOptions opt)
     QValueAxis *axisY = new QValueAxis;
     axisY->setTickCount(9);
     axisY->setLabelFormat("%i");
-    QString title = "Efficiency (%)";
-    axisY->setTitleText(title);
+    axisY->setTitleText("Efficiency (%)");
     axisY->setMax(100);
     chart->addAxis(axisY, Qt::AlignLeft);
+
+
+    QVector<ALICE::UserCat> ucat(mPlDataName.size() - 1); // omit the time column
+    qint32 colIndex = 0;
+    for (QString ce : mPlDataName) {
+        if (ce == "alidaq")
+            ucat.insert(colIndex, ALICE::kAliDaq);
+        else if (ce == "aliprod")
+            ucat.insert(colIndex, ALICE::kAliProd);
+        else if (ce == "alitrain")
+            ucat.insert(colIndex, ALICE::kAliTrain);
+        else
+            ucat.insert(colIndex, ALICE::kAliUsers);
+        colIndex++;
+    }
+
+    QLineSeries *seriesDaq = new QLineSeries;
+    seriesDaq->setName("Raw Data Processing");
+
+    QLineSeries *seriesProd = new QLineSeries;
+    seriesProd->setName("Monte-Carlo Production");
+
+    QLineSeries *seriesTrain = new QLineSeries;
+    seriesTrain->setName("Train Analysis");
+
+    QLineSeries *seriesUsers = new QLineSeries;
+    seriesUsers->setName("Users Analysis");
+
+    QVector<double> *avEffUsers = new QVector<double>(ALICE::kAliUsers + 1);
+    QVector<qint32> avNormUsers(ALICE::kAliUsers + 1);
+
+    avEffUsers->replace(ALICE::kAliDaq,   0.0);
+    avEffUsers->replace(ALICE::kAliProd,  0.0);
+    avEffUsers->replace(ALICE::kAliTrain, 0.0);
+    avEffUsers->replace(ALICE::kAliUsers, 0.0);
+    avNormUsers.replace(ALICE::kAliDaq,   0);
+    avNormUsers.replace(ALICE::kAliProd,  0);
+    avNormUsers.replace(ALICE::kAliTrain, 0);
+    avNormUsers.replace(ALICE::kAliUsers, 0);
+
+    QDateTime today(QDate::currentDate());
+    double xmin = today.toMSecsSinceEpoch();
+
+    QVector<qint32> normUsers(ALICE::kAliUsers + 1);
+    QVector<double> effUsers(ALICE::kAliUsers  + 1);
+
+    for (QVector<double> *valVec : mPlData) {
+        effUsers.replace(ALICE::kAliDaq,   0.0);
+        effUsers.replace(ALICE::kAliProd,  0.0);
+        effUsers.replace(ALICE::kAliTrain, 0.0);
+        effUsers.replace(ALICE::kAliUsers, 0.0);
+        normUsers.replace(ALICE::kAliDaq,   0);
+        normUsers.replace(ALICE::kAliProd,  0);
+        normUsers.replace(ALICE::kAliTrain, 0);
+        normUsers.replace(ALICE::kAliUsers, 0);
+        double x = valVec->at(0);
+        if (x < xmin)
+            xmin = x;
+        for (qint32 colIndex = 1; colIndex < valVec->size(); colIndex++) {
+            ALICE::UserCat user = ucat.at(colIndex);
+            double val = valVec->at(colIndex);
+            if ( val > 0.0) {
+                effUsers.replace(user, effUsers.at(user) + val);
+                normUsers.replace(user, normUsers.at(user) + 1);
+                avEffUsers->replace(user, avEffUsers->at(user) + val);
+                avNormUsers.replace(user, avNormUsers.at(user) + 1);
+            }
+        }
+        if (normUsers.at(ALICE::kAliDaq) > 0) {
+            effUsers.replace(ALICE::kAliDaq, effUsers.at(ALICE::kAliDaq) / normUsers.at(ALICE::kAliDaq));
+            seriesDaq->append(x, effUsers.at(ALICE::kAliDaq));
+        }
+        if (normUsers.at(ALICE::kAliProd) > 0) {
+            effUsers.replace(ALICE::kAliProd, effUsers.at(ALICE::kAliProd) / normUsers.at(ALICE::kAliProd));
+            seriesProd->append(x, effUsers.at(ALICE::kAliProd));
+        }
+        if (normUsers.at(ALICE::kAliTrain) > 0) {
+            effUsers.replace(ALICE::kAliTrain, effUsers.at(ALICE::kAliTrain) / normUsers.at(ALICE::kAliTrain));
+            seriesTrain->append((qint64)x, effUsers.at(ALICE::kAliTrain));
+        }
+        if (normUsers.at(ALICE::kAliUsers) > 0) {
+            effUsers.replace(ALICE::kAliUsers, effUsers.at(ALICE::kAliUsers) / normUsers.at(ALICE::kAliUsers));
+            seriesUsers->append((qint64)x, effUsers.at(ALICE::kAliUsers));
+        }
+    }
+
+    avEffUsers->replace(ALICE::kAliDaq, avEffUsers->at(ALICE::kAliDaq) / avNormUsers.at(ALICE::kAliDaq));
+    avEffUsers->replace(ALICE::kAliProd, avEffUsers->at(ALICE::kAliProd) / avNormUsers.at(ALICE::kAliProd));
+    avEffUsers->replace(ALICE::kAliTrain, avEffUsers->at(ALICE::kAliTrain) / avNormUsers.at(ALICE::kAliTrain));
+    avEffUsers->replace(ALICE::kAliUsers, avEffUsers->at(ALICE::kAliUsers) / avNormUsers.at(ALICE::kAliUsers));
+
+    PlTableModel *model = new PlTableModel();
+    model->setColRow(ALICE::kAliUsers + 3, 1);
+    QVector<QString> headers(model->columnCount());
+    headers.replace(ALICE::kAliDaq   + 2, "Average efficiency for Raw Processing (%)");
+    headers.replace(ALICE::kAliProd  + 2, "Average efficiency for MC Production (%)");
+    headers.replace(ALICE::kAliTrain + 2, "Average efficiency for Train Analysis (%)");
+    headers.replace(ALICE::kAliUsers + 2, "Average efficiency for Users Analysis (%)");
+    model->setHeader(headers);
+    QString dummy("1970");
+    model->addData(dummy, avEffUsers);
+
+    chart->addSeries(seriesDaq);
+    seriesDaq->attachAxis(axisY);
+    seriesDaq->attachAxis(axisX);
+
+    chart->addSeries(seriesProd);
+    seriesProd->attachAxis(axisY);
+    seriesProd->attachAxis(axisX);
+
+    chart->addSeries(seriesTrain);
+    seriesTrain->attachAxis(axisY);
+    seriesTrain->attachAxis(axisX);
+
+    chart->addSeries(seriesUsers);
+    seriesUsers->attachAxis(axisY);
+    seriesUsers->attachAxis(axisX);
+
+    today.setMSecsSinceEpoch(xmin);
+    axisX->setMin(today);
+
+    QString title("Users Efficiency Profile");
+
+    QChartView *chartView = new QChartView();
+    chartView->setAttribute(Qt::WA_DeleteOnClose);
+    chartView->setWindowTitle(title);
+    chartView->setRenderHint(QPainter::Antialiasing);
+    chartView->setMinimumSize(640, 480);
+    chartView->setChart(chart);
+
+    QTableView *tableView = new QTableView;
+    tableView->setModel(model);
+    tableView->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+    tableView->resizeColumnsToContents();
+    tableView->setMaximumHeight(80);
+    tableView->hideColumn(0);
+    tableView->hideColumn(1);
+
+    QSplitter *splitter = new QSplitter(Qt::Vertical);
+    splitter->addWidget(tableView);
+    splitter->addWidget(chartView);
+
+    QVBoxLayout *allLayout = new QVBoxLayout();
+    allLayout->addWidget(splitter);
+
+    for (QMdiSubWindow *sw : mMdiArea->subWindowList())
+        if(sw->windowTitle() == title) {
+            mMdiArea->removeSubWindow(sw);
+            sw->close();
+        }
+
+    QWidget *allTogether = new QWidget();
+    allTogether->setWindowTitle(title);
+    allTogether->setLayout(allLayout);
+
+    mMdiArea->addSubWindow(allTogether)->show();
+    allTogether->setStyleSheet("background-color:white");
 }
 
 //===========================================================================

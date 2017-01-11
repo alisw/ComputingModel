@@ -22,12 +22,16 @@ class ALICE : public QObject
     Q_OBJECT
     Q_ENUMS (ListOptions)
     Q_ENUMS (Column)
+    Q_ENUMS (UserCat)
 
 
 public:
     enum ListOptions {kFA //to Funding Agencies and M&O payers
                      };
     enum Column {kStatC, kFAC, kMOC, kConC};
+
+    enum UserCat {kAliDaq, kAliProd, kAliTrain, kAliUsers};
+
     static ALICE& instance();
 
     void                 addCPU(Tier::TierCat cat, double cpu);
