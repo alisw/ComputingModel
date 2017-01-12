@@ -3,6 +3,7 @@
 #include <QAction>
 #include <QAreaSeries>
 #include <QCalendarWidget>
+#include <QCategoryAxis>
 #include <QChart>
 #include <QChartView>
 #include <QtCore>
@@ -604,6 +605,9 @@ void MainWindow::plot(qint32 opt)
     case kUserEfficiencyProfile:
         selectDates(kUserEfficiencyProfile);
         break;
+    case kEventSizeProfile:
+        plProfile(kEventSizeProfile);
+        break;
     default:
         break;
    }
@@ -1062,7 +1066,7 @@ void MainWindow::plUserEfficiency(MainWindow::PlotOptions opt)
     allTogether->setLayout(allLayout);
 
     mMdiArea->addSubWindow(allTogether)->show();
-    allTogether->setStyleSheet("background-color:white");
+//    allTogether->setStyleSheet("background-color:white");
 }
 
 //===========================================================================
@@ -1097,6 +1101,58 @@ void MainWindow:: getDataFromWeb(PlotOptions opt)
     connect(reply, SIGNAL(downloadProgress(qint64,qint64)), this, SLOT(transferProgress(qint64,qint64)));    
     connect(reply, &QNetworkReply::finished, this, [opt, this]{ parsePlotUrlFile(opt); });
     connect(reply, SIGNAL(error(QNetworkReply::NetworkError)), this, SLOT(showNetworkError(QNetworkReply::NetworkError)));
+}
+
+//===========================================================================
+void MainWindow::getDataFromFile(MainWindow::PlotOptions opt)
+{
+    // reads data from a local file into mPLData and mPLDataName
+
+    switch (opt) {
+    case kEventSizeProfile:
+    {
+        mPlDataName.clear();
+        qDeleteAll(mPlData.begin(), mPlData.end());
+        mPlData.clear();
+
+        QString fileName(":/data/EventSize.csv");
+        QFile csvFile(fileName);
+        if (!csvFile.open(QIODevice::ReadOnly)) {
+            qWarning() << "File " << fileName << "could not be opened";
+            return;
+        }
+        // read headers in second line
+        QString line = csvFile.readLine();
+        line = csvFile.readLine();
+        QStringList strList = line.split(";");
+        // find the event size column
+        qint32 esColumn = -1;
+        for (qint32 index = 0; index < strList.size(); index++) {
+            QString str = strList.at(index);
+            if (str.contains("Event Size")) {
+                esColumn = index;
+                break;
+            }
+        }
+        while(!csvFile.atEnd()) {
+            line = csvFile.readLine();
+            strList = line.split(";");
+            QString period(strList.at(0));
+            if (period.contains("LHC")) {
+                QVector<double> *dataVec = new QVector<double>(1);
+                mPlDataName.append(strList.at(0));
+                QString data = strList.at(esColumn);
+                data.replace(" ", "");
+                dataVec->replace(0, data.toDouble());
+                mPlData.append(dataVec);
+            }
+        }
+        csvFile.close();
+        break;
+    }
+    default:
+        break;
+    }
 }
 
 //===========================================================================
@@ -1458,10 +1514,89 @@ void MainWindow::plProfile(PlotOptions opt)
 
         break;
     }
+    case kEventSizeProfile:
+    {
+        getDataFromFile(kEventSizeProfile);
+        plProfileEventSize();
+
+        break;
+    }
     default:
         break;
     }
 
+}
+
+//===========================================================================
+void MainWindow::plProfileEventSize()
+{
+    // draws the event size as a function of the LHC period
+    // the data are in mPLData
+    // the name of LHC periods are in mPLDataName
+
+    QChart *chart = new QChart();
+    chart->setTheme(QChart::ChartThemeBlueIcy);
+    QMetaEnum me = QMetaEnum::fromType<PlotOptions>();
+    QString sopt = me.key(kEventSizeProfile);
+    sopt.remove("k");
+    sopt.remove("Profile");
+    chart->setTitle(QString("ALICE %1 during RUN2").arg(sopt));
+
+
+    QCategoryAxis *axisX = new QCategoryAxis();
+    for (qint32 index = 0; index < mPlDataName.size(); index++)
+        axisX->append(mPlDataName.at(index), index);
+    axisX->setRange(0, mPlDataName.size());
+    axisX->setTitleText("LHC period");
+    chart->addAxis(axisX, Qt::AlignBottom);
+
+    QValueAxis *axisY = new QValueAxis;
+    axisY->setTickCount(9);
+    axisY->setLabelFormat("%i");
+    axisY->setTitleText("Efficiency (%)");
+    chart->addAxis(axisY, Qt::AlignLeft);
+
+    QLineSeries *series = new QLineSeries;
+    series->setName("Average Event Size (kB)");
+    double ymax = 0;
+    for (qint32 x = 0; x < mPlData.size(); x++) {
+        QVector<double> *data = mPlData.at(x);
+        double y = data->at(0);
+        if (y > ymax)
+            ymax = y;
+        series->append(x, y);
+    }
+
+    int exp = qFloor(qLn(ymax) / qLn(10));
+    if (ymax  < qPow(10., exp))
+            ymax = qPow(10., exp);
+    else {
+            ymax = qCeil(ymax / qPow(10, exp)) * qPow(10, exp);
+    }
+
+    axisY->setMax(ymax);
+    axisY->setMin(0);
+    chart->addSeries(series);
+    series->attachAxis(axisY);
+    series->attachAxis(axisX);
+
+    QString title("Average Event Size");
+
+    QChartView *chartView = new QChartView();
+    chartView->setAttribute(Qt::WA_DeleteOnClose);
+    chartView->setWindowTitle(title);
+    chartView->setRenderHint(QPainter::Antialiasing);
+    chartView->setMinimumSize(640, 480);
+    chartView->setChart(chart);
+
+    for (QMdiSubWindow *sw : mMdiArea->subWindowList())
+        if(sw->windowTitle() == title) {
+            mMdiArea->removeSubWindow(sw);
+            sw->close();
+        }
+
+    mMdiArea->addSubWindow(chartView)->show();
+    chartView->setStyleSheet("background-color:white");
 }
 
 //===========================================================================

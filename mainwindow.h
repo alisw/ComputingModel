@@ -37,7 +37,8 @@ class MainWindow : public QMainWindow
     Q_OBJECT
 
 public:
-    enum PlotOptions {kMandOProfile, kRequirementsProfile, kPledgesProfile, kRegisteredDataProfile, kUsageProfile, kTierEfficiencyProfile, kUserEfficiencyProfile};
+    enum PlotOptions {kMandOProfile, kRequirementsProfile, kPledgesProfile, kRegisteredDataProfile, kUsageProfile, kTierEfficiencyProfile, kUserEfficiencyProfile,
+                      kEventSizeProfile};
 
     Q_ENUM (PlotOptions)
 
@@ -69,12 +70,14 @@ private:
     void        setDebugMode(bool val);
     void        doeReqAndPle(QString year);
     void        getDataFromWeb(MainWindow::PlotOptions opt);
+    void        getDataFromFile(MainWindow::PlotOptions opt);
     void        keyPressEvent(QKeyEvent *event);
     void        loadGlance(QString year);
     void        loadPledges(QString year);
     void        loadRequirements(QString year);
     void        plot(qint32 opt);
     void        plProfile(PlotOptions opt);
+    void        plProfileEventSize();
     void        plProfileMandO();
     void        plProfile(PlotOptions opt,  Resources::Resources_type type);
     void        plRegisteredData(PlotOptions opt);
