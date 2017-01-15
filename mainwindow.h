@@ -30,6 +30,7 @@ struct MyLessThan {
 
 class QLabel;
 class QProgressBar;
+class QDate;
 class QDateEdit;
 
 class MainWindow : public QMainWindow
@@ -58,6 +59,7 @@ private slots:
     void        parsePlotUrlFile(PlotOptions opt);
     void        printCurrentWindow() const;
     void        resizeView() {mTableConsol->resizeColumnsToContents();}
+    void        saveUrlFile(const QDate &date, Tier::TierCat cat);
     void        selectDates(PlotOptions opt);
     void        showNetworkError(QNetworkReply::NetworkError er);
     void        transferProgress(qint64 readBytes, qint64 totalBytes);
@@ -68,13 +70,15 @@ private:
     void        createMenu();
     static void customMessageHandler(QtMsgType type, const QMessageLogContext &context, const QString &msg);
     void        setDebugMode(bool val);
-    void        doeReqAndPle(QString year);
+    void        doeReqAndPle(const QString &year);
     void        getDataFromWeb(MainWindow::PlotOptions opt);
+    void        getDataFromWeb(const QDate &date, Tier::TierCat cat);
     void        getDataFromFile(MainWindow::PlotOptions opt);
     void        keyPressEvent(QKeyEvent *event);
     void        loadGlance(QString year);
     void        loadPledges(QString year);
     void        loadRequirements(QString year);
+    void        loadUsageWLCG(QDate date, Tier::TierCat cat);
     void        plot(qint32 opt);
     void        plProfile(PlotOptions opt);
     void        plProfileEventSize();

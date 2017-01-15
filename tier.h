@@ -12,11 +12,12 @@
 class Tier : public QObject
 {
     Q_OBJECT
-    Q_ENUMS (TierCat)
 
 public:
 
     enum TierCat {kT0, kT1, kT2, kTOTS, kUnknown};
+    Q_ENUM (TierCat)
+
     explicit Tier(QObject *parent = 0);
     Tier (QString name, TierCat cat, Resources &res, QObject *parent = 0);
 

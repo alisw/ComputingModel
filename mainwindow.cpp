@@ -494,7 +494,7 @@ void MainWindow::setDebugMode(bool val)
 }
 
 //===========================================================================
-void MainWindow::doeReqAndPle(QString year)
+void MainWindow::doeReqAndPle(const QString &year)
 {
     // the console for table view
 
@@ -576,6 +576,47 @@ void MainWindow::loadRequirements(QString year)
 
     ALICE::instance().loadRequirements(year);
 
+}
+
+//===========================================================================
+void MainWindow::loadUsageWLCG(QDate date, Tier::TierCat cat)
+{
+   // load the CPU usage from EGI (new portal).
+   // Tier1: https://accounting-support.egi.eu/custom_xml.php?query=normcpu&option=TIER1&sYear=yyyy&sMonth=mm&eYear=yyyy&eMonth=mm&yrange=TIER1&xrange=VO&groupVO=lhc&localJobs=onlyinfrajobs&tree=TIER1&optval=&csv=true
+   // Tier2: https://accounting-support.egi.eu/custom_xml.php?query=normcpu&option=COUNTRY&sYear=yyyy&sMonth=mm&eYear=yyyy&eMonth=m&yrange=FEDERATION&xrange=VO&groupVO=egi&groupVO=egi&localJobs=onlyinfrajobs&tree=TIER2&optval=&csv=true
+
+    qint32 sYear = date.year();
+    qint32 eYear = sYear;
+    qint32 sMonth = date.month();
+    qint32 eMonth = sMonth;
+    QMetaEnum me = QMetaEnum::fromType<Tier::TierCat>();
+    QString scat = me.key(cat);
+    scat.remove("k");
+    scat = scat.toUpper();
+    switch (cat) {
+    case Tier::kT0:
+        mURL = QString("https://accounting-support.egi.eu/custom_xml.php?query=normcpu&option=%1&"
+                       "sYear=%2&sMonth=%3&eYear=%4&eMonth=%5&yrange=%1&xrange=VO&"
+                       "groupVO=lhc&localJobs=onlyinfrajobs&tree=%1&optval=&csv=true").
+                        arg(scat).arg(sYear).arg(sMonth).arg(eYear).arg(eMonth);
+        break;
+    case Tier::kT1:
+        mURL = QString("https://accounting-support.egi.eu/custom_xml.php?query=normcpu&option=%1&"
+                       "sYear=%2&sMonth=%3&eYear=%4&eMonth=%5&yrange=%1&xrange=VO&"
+                       "groupVO=lhc&localJobs=onlyinfrajobs&tree=%1&optval=&csv=true").
+                        arg(scat).arg(sYear).arg(sMonth).arg(eYear).arg(eMonth);
+        break;
+    case Tier::kT2:
+        mURL = QString("https://accounting-support.egi.eu/custom_xml.php?query=normcpu&option=COUNTRY&"
+                       "sYear=%1&sMonth=%2&eYear=%3&eMonth=%4&yrange=FEDERATION&xrange=VO&groupVO=egi&"
+                       "groupVO=egi&localJobs=onlyinfrajobs&tree=%5&optval=&csv=true").
+                        arg(sYear).arg(sMonth).arg(eYear).arg(eMonth).arg(scat);
+        break;
+    default:
+        break;
+    }
+
+    getDataFromWeb(date, cat);
 }
 
 //===========================================================================
@@ -1104,6 +1145,38 @@ void MainWindow:: getDataFromWeb(PlotOptions opt)
 }
 
 //===========================================================================
+void MainWindow::getDataFromWeb(const QDate &date, Tier::TierCat cat)
+{
+    QWidget *w = new QWidget();
+    w->setAttribute(Qt::WA_DeleteOnClose);
+    w->setLayout(new QVBoxLayout);
+
+    mProgressBar = new QProgressBar(w);
+    w->layout()->addWidget(mProgressBar);
+
+    mDownLoadText = new QLabel;
+    mDownLoadText->setText(QString("Downloading from %1").arg(mURL));
+    mDownLoadText->setAlignment(Qt::AlignHCenter);
+    w->layout()->addWidget(mDownLoadText);
+    w->show();
+
+    QNetworkRequest request;
+    QSslConfiguration conf = request.sslConfiguration();
+    conf.setPeerVerifyMode(QSslSocket::VerifyNone);
+    request.setSslConfiguration(conf);
+    request.setUrl(mURL);
+
+    if (!mNetworkManager)
+        mNetworkManager = new QNetworkAccessManager(this);
+    QNetworkReply *reply = mNetworkManager->get(request);
+
+
+    connect(reply, SIGNAL(downloadProgress(qint64,qint64)), this, SLOT(transferProgress(qint64,qint64)));
+    connect(reply, &QNetworkReply::finished, this, [date, cat, this]{ saveUrlFile(date, cat); });
+    connect(reply, SIGNAL(error(QNetworkReply::NetworkError)), this, SLOT(showNetworkError(QNetworkReply::NetworkError)));
+}
+
+//===========================================================================
 void MainWindow::getDataFromFile(MainWindow::PlotOptions opt)
 {
     // reads data from a local file into mPLData and mPLDataName
@@ -1458,6 +1531,37 @@ void MainWindow::printCurrentWindow() const
     mb->setAttribute(Qt::WA_DeleteOnClose);
     mb->setText(QString("Window saved as %1").arg(oFileName));
     mb->show();
+}
+
+//===========================================================================
+void MainWindow::saveUrlFile(const QDate &date, Tier::TierCat cat)
+{
+    // save the url as a file
+    QNetworkReply *reply = qobject_cast<QNetworkReply*>(sender());
+    QByteArray data = reply->readAll();
+    if (data.isEmpty())
+        return;
+
+    mDownLoadText->setText("DONE");
+
+    QTextStream instream(&data);
+    QString line;
+    //FIXME: save file to the righ place
+    QString dir(QString("data/%1/%2/").arg(date.year()).arg(date.month()));
+    QString fileName;
+    if (cat == Tier::kT0 || cat == Tier::kT1)
+        fileName = "TIER1_TIER1_sum_normcpu_TIER1_VO.csv";
+    else
+        fileName = "reptier2.csv";
+    QFile file( fileName.prepend(dir));
+    if ( file.open(QIODevice::ReadWrite) )
+    {
+        QTextStream oustream( &file );
+        while (instream.readLineInto(&line)) {
+            oustream << line << endl;
+        }
+
+    }
 }
 
 //===========================================================================
