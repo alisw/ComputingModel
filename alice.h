@@ -40,9 +40,6 @@ public:
     qint32               countMOPayers() const;
     void                 doReqAndPle(const QString &year);
     void                 drawTable();
-    void                 loadGlanceData(const QString & /*year*/) { qWarning() << Q_FUNC_INFO << "not implemented"; }
-    void                 loadRequirements(const QString &/*year*/) { qWarning() << Q_FUNC_INFO << "not implemented"; }
-    void                 loadPledges(const QString & /*year*/) { qWarning() << Q_FUNC_INFO << "not implemented"; }
     QStandardItemModel   *getModel() { return mModel; }
     double               getPledged(Tier::TierCat tier, Resources::Resources_type restype, const QString &year);
     double               getRequired(Tier::TierCat tier, Resources::Resources_type restype, const QString &year);

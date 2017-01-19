@@ -238,7 +238,10 @@ void MainWindow::transferProgress(qint64 readBytes, qint64 totalBytes)
 void MainWindow::validateDates(PlotOptions opt)
 {
     //sets start and end date and launches data collection from url
+    //FIXME: widget does not close
     qobject_cast<QWidget*>(sender()->parent())->close();
+    //FIXME: widget does not close
+
     QDate dStart = mDEStart->date();
     QDate dEnd   = mDEEnd->date();
     qint64 diffS = dStart.daysTo(QDate::currentDate()) * 24 * 3600 * 1000;
@@ -279,6 +282,27 @@ void MainWindow::validateDates(PlotOptions opt)
 }
 
 //===========================================================================
+void MainWindow::validateDates(LoadOptions opt)
+{
+    //sets start and end date and launches data collection from url
+
+    //FIXME: widget does not close
+    qobject_cast<QWidget*>(sender()->parent())->close();
+    //FIXME: widget does not close
+    QDate dStart = mDEStart->date();
+    QDate dEnd   = mDEEnd->date();
+
+    switch (opt) {
+    case kEGIUsageReport:
+        {
+        loadUsageWLCG(dStart, dEnd, Tier::kT1);
+        loadUsageWLCG(dStart, dEnd, Tier::kT2);
+        break;
+        }
+    }
+}
+
+//===========================================================================
 void MainWindow::createActions()
 {
     // created the actions associated to the menu items
@@ -301,32 +325,6 @@ void MainWindow::createActions()
     connect(mDebugOffAction, &QAction::triggered, this, [this]{ setDebugMode(false); });
 
     QDir dataDir(":/data/");
-
-    // Glance loading action
-//    for (QString subDir : dataDir.entryList(QDir::Dirs)) {
-//        QAction *act = new QAction(this);
-//        act->setText(QString("%1 status").arg(subDir));
-//        connect(act, &QAction::triggered, this, [this, subDir]{ loadGlance(subDir); });
-//        mGlanceData.append(act);
-//    }
-
-    // Required resources loading action
-//    dataDir.setPath(":/data/");
-//    for (QString subDir : dataDir.entryList(QDir::Dirs)) {
-//        QAction *act = new QAction(this);
-//        act->setText(QString("%1 required").arg(subDir));
-//        connect(act, &QAction::triggered, this, [subDir, this]{ loadRequirements(subDir); });
-//        mRequiredResources.append(act);
-//    }
-
-    // pledges loading action
-//    dataDir.setPath(":/data/");
-//    for (QString subDir : dataDir.entryList(QDir::Dirs)) {
-//        QAction *act = new QAction(this);
-//        act->setText(QString("%1 pledged").arg(subDir));
-//        connect(act, &QAction::triggered, this, [subDir, this]{ loadPledges(subDir); });
-//        mPledgedResources.append(act);
-//    }
 
     // monthly reports reading action
     dataDir.setPath(":/data/");
@@ -374,6 +372,18 @@ void MainWindow::createActions()
         connect(act, &QAction::triggered, this, [what, this]{ plot(what); });
         mPlAct.append(act);
     }
+
+    // Loads
+    me = QMetaEnum::fromType<LoadOptions>();
+    for (qint32 index = 0; index < me.keyCount(); index++) {
+        QString     swhat  = me.key(index);
+        swhat.remove(0, 1); // removes the "k"
+        qint32      what   = me.value(index);
+        QAction *act = new QAction(this);
+        act->setText(QString("load %1").arg(swhat));
+        connect(act, &QAction::triggered, this, [what, this]{ load(what); });
+        mLoAct.append(act);
+    }
 }
 
 //===========================================================================
@@ -414,38 +424,28 @@ void MainWindow::createMenu()
     mDebugMenu->addAction(mDebugOnAction);
     mDebugMenu->addAction(mDebugOffAction);
 
+    // Load data
+    QMenu *loMenu = menuBar()->addMenu(tr("Do various loads"));
+    for (QAction * act : mLoAct)
+        loMenu->addAction(act);
+
     // Actions
-    mActionsMenu = menuBar()->addMenu(tr("&Actions"));
-
-//    QMenu *readG = new QMenu(tr("Load Glance data"));
-//    for (QAction * act : mGlanceData)
-//        readG->addAction(act);
-//    mActionsMenu->addMenu(readG);
-
-//    QMenu *readRQ = new QMenu(tr("Load requirements"));
-//    for (QAction * act : mRequiredResources)
-//        readRQ->addAction(act);
-//    mActionsMenu->addMenu(readRQ);
-
-//    QMenu *readPL = new QMenu(tr("Load Pledges"));
-//    for (QAction * act : mPledgedResources)
-//        readPL->addAction(act);
-//    mActionsMenu->addMenu(readPL);
+    QMenu *actionMenu = menuBar()->addMenu(tr("&Actions"));
 
     QMenu *doReqPle = new QMenu(tr("Requirements and Pledges"));
     for (QAction * act : mDoReqPle)
         doReqPle->addAction(act);
-    mActionsMenu->addMenu(doReqPle);
+    actionMenu->addMenu(doReqPle);
 
     QMenu *readRP = new QMenu(tr("read reports"));
     for (QMenu *menu : mReportsMenus) {
         readRP->addMenu(menu);
     }
-    mActionsMenu->addMenu(readRP);
+    actionMenu->addMenu(readRP);
 
-    mPlMenu = menuBar()->addMenu(tr("Do various plots"));
+    QMenu *plMenu = menuBar()->addMenu(tr("Do various plots"));
     for (QAction * act : mPlAct)
-        mPlMenu->addAction(act);
+        plMenu->addAction(act);
 
 }
 
@@ -544,7 +544,21 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
         break;
     default:
         break;
+        }
+}
+
+//===========================================================================
+void MainWindow::load(qint32 opt)
+{
+    // select various optoions for loading data
+    switch (opt) {
+    case kEGIUsageReport:
+        selectDates(kEGIUsageReport);
+        break;
+    default:
+        break;
     }
+
 }
 
 //===========================================================================
@@ -554,43 +568,29 @@ void MainWindow::mousePressEvent(QMouseEvent *event)
 }
 
 //===========================================================================
-void MainWindow::loadGlance(QString year)
-{
-    // read data from Glance and generated csv
-
-    ALICE::instance().loadGlanceData(year);
-}
-
-//===========================================================================
-void MainWindow::loadPledges(QString year)
-{
-    // read pledges from CSV file
-
-    ALICE::instance().loadPledges(year);
-}
-
-//===========================================================================
-void MainWindow::loadRequirements(QString year)
-{
-    // read data from csv file
-
-    ALICE::instance().loadRequirements(year);
-
-}
-
-//===========================================================================
-void MainWindow::loadUsageWLCG(QDate date, Tier::TierCat cat)
+void MainWindow::loadUsageWLCG(QDate dateS, QDate dateE, Tier::TierCat cat)
 {
    // load the CPU usage from EGI (new portal).
    // Tier1: https://accounting-support.egi.eu/custom_xml.php?query=normcpu&option=TIER1&sYear=yyyy&sMonth=mm&eYear=yyyy&eMonth=mm&yrange=TIER1&xrange=VO&groupVO=lhc&localJobs=onlyinfrajobs&tree=TIER1&optval=&csv=true
    // Tier2: https://accounting-support.egi.eu/custom_xml.php?query=normcpu&option=COUNTRY&sYear=yyyy&sMonth=mm&eYear=yyyy&eMonth=m&yrange=FEDERATION&xrange=VO&groupVO=egi&groupVO=egi&localJobs=onlyinfrajobs&tree=TIER2&optval=&csv=true
-
-    qint32 sYear = date.year();
-    qint32 eYear = sYear;
-    qint32 sMonth = date.month();
-    qint32 eMonth = sMonth;
-    QMetaEnum me = QMetaEnum::fromType<Tier::TierCat>();
-    QString scat = me.key(cat);
+    qint32 sYear = dateS.year();
+    qint32 eYear = dateE.year();
+    qint32 sMonth = dateS.month();
+    qint32 eMonth = dateE.month();
+    QString scat;
+    switch (cat) {
+    case Tier::kT0:
+        scat = "TIER1";
+        break;
+    case Tier::kT1:
+        scat = "TIER1";
+        break;
+    case Tier::kT2:
+        scat = "TIER2";
+        break;
+    default:
+        break;
+    }
     scat.remove("k");
     scat = scat.toUpper();
     switch (cat) {
@@ -601,10 +601,10 @@ void MainWindow::loadUsageWLCG(QDate date, Tier::TierCat cat)
                         arg(scat).arg(sYear).arg(sMonth).arg(eYear).arg(eMonth);
         break;
     case Tier::kT1:
-        mURL = QString("https://accounting-support.egi.eu/custom_xml.php?query=normcpu&option=%1&"
-                       "sYear=%2&sMonth=%3&eYear=%4&eMonth=%5&yrange=%1&xrange=VO&"
+        mURL = QString("https://accounting-support.egi.eu/custom_xml.php?query=normcpu&option=COUNTRY&"
+                       "sYear=%1&sMonth=%2&eYear=%3&eMonth=%4&yrange=%5&xrange=VO&"
                        "groupVO=lhc&localJobs=onlyinfrajobs&tree=%1&optval=&csv=true").
-                        arg(scat).arg(sYear).arg(sMonth).arg(eYear).arg(eMonth);
+                        arg(sYear).arg(sMonth).arg(eYear).arg(eMonth).arg(scat);
         break;
     case Tier::kT2:
         mURL = QString("https://accounting-support.egi.eu/custom_xml.php?query=normcpu&option=COUNTRY&"
@@ -616,7 +616,7 @@ void MainWindow::loadUsageWLCG(QDate date, Tier::TierCat cat)
         break;
     }
 
-    getDataFromWeb(date, cat);
+    getDataFromWeb(dateS, cat);
 }
 
 //===========================================================================
@@ -1147,6 +1147,7 @@ void MainWindow:: getDataFromWeb(PlotOptions opt)
 //===========================================================================
 void MainWindow::getDataFromWeb(const QDate &date, Tier::TierCat cat)
 {
+    // connect to the mURL and continue with saveURLFile when connection established
     QWidget *w = new QWidget();
     w->setAttribute(Qt::WA_DeleteOnClose);
     w->setLayout(new QVBoxLayout);
@@ -1539,15 +1540,18 @@ void MainWindow::saveUrlFile(const QDate &date, Tier::TierCat cat)
     // save the url as a file
     QNetworkReply *reply = qobject_cast<QNetworkReply*>(sender());
     QByteArray data = reply->readAll();
-    if (data.isEmpty())
+    if (data.isEmpty()) {
+        qCritical() << Q_FUNC_INFO << "no data found";
         return;
+    }
 
     mDownLoadText->setText("DONE");
 
     QTextStream instream(&data);
     QString line;
     //FIXME: save file to the righ place
-    QString dir(QString("data/%1/%2/").arg(date.year()).arg(date.month()));
+//    QString dir(QString("data/%1/%2/").arg(date.year()).arg(date.month()));
+    QString dir("/Users/schutz/Desktop/");
     QString fileName;
     if (cat == Tier::kT0 || cat == Tier::kT1)
         fileName = "TIER1_TIER1_sum_normcpu_TIER1_VO.csv";
@@ -1560,7 +1564,7 @@ void MainWindow::saveUrlFile(const QDate &date, Tier::TierCat cat)
         while (instream.readLineInto(&line)) {
             oustream << line << endl;
         }
-
+        file.close();
     }
 }
 
@@ -1927,6 +1931,52 @@ void MainWindow::selectDates(PlotOptions opt)
     mDEEnd->setDate(dateEnd);
 
     QPushButton *okButton = new QPushButton("OK", datesel);
+    connect(okButton, &QPushButton::clicked, this, [opt, this]{ validateDates(opt); });
+
+    QGridLayout *layout = new QGridLayout;
+    layout->addWidget(startDate, 0, 0, 1, 1, Qt::AlignLeft);
+    layout->addWidget(mDEStart, 0, 1, 1, 1, Qt::AlignLeft);
+    layout->addWidget(endDate,   1, 0, 1, 1, Qt::AlignLeft);
+    layout->addWidget(mDEEnd, 1, 1, 1, 1, Qt::AlignLeft);
+    layout->addWidget(okButton, 2, 0, 1, 2, Qt::AlignHCenter);
+    datesel->setLayout(layout);
+    datesel->show();
+}
+
+//===========================================================================
+void MainWindow::selectDates(MainWindow::LoadOptions opt)
+{
+    //selects a start and end date
+
+    QWidget *datesel = new QWidget();
+
+    qDebug() << Q_FUNC_INFO << datesel;
+
+    datesel->setAttribute(Qt::WA_DeleteOnClose);
+    datesel->setWindowTitle("Select start and end date");
+
+
+    //FIXME only start date and end date = + 1 month or today
+    QLabel *startDate = new QLabel("Start Date");
+    QLabel *endDate   = new QLabel("End Date");
+
+    QDate dateStart(QDate::currentDate());
+    mDEStart = new QDateEdit();
+    mDEStart->setMaximumDate(QDate::currentDate());
+    mDEStart->setMinimumDate(QDate(2014, 9, 1));
+    mDEStart->setCalendarPopup(true);
+    mDEStart->setDate(dateStart);
+    QDate dateEnd = mDEStart->date().addMonths(-1);
+    mDEEnd = new QDateEdit();
+    mDEEnd->setMaximumDate(QDate::currentDate());
+    mDEEnd->setMinimumDate(QDate(2014, 9, 1));
+    mDEEnd->setCalendarPopup(true);
+    mDEEnd->setDate(dateEnd);
+
+    QPushButton *okButton = new QPushButton("OK", datesel);
+
+    qDebug() << Q_FUNC_INFO << okButton;
+
     connect(okButton, &QPushButton::clicked, this, [opt, this]{ validateDates(opt); });
 
     QGridLayout *layout = new QGridLayout;

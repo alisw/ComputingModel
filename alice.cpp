@@ -92,8 +92,6 @@ void ALICE::doReqAndPle(const QString &year)
 //    setCEandSE(year);
 
 
-// TEMPORARY DISABLE
-
     // collect the information from Rebus, sites and pledges
     readRebus(year);
 
@@ -435,6 +433,7 @@ bool ALICE::readRebus(const QString &year)
         readGlanceData(year);
         organizeFA();
     }
+
     mT0Pledged.clear();
     mT1Pledged.clear();
     mT2Pledged.clear();
@@ -485,7 +484,12 @@ bool ALICE::readRebus(const QString &year)
             else
                 qWarning() << "Tier category" << strList.at(0) << "not recognized";
 
+
+
             FundingAgency *fa = searchFA(strList.at(1));
+
+            if (!fa)
+                qDebug() << Q_FUNC_INFO << strList.at(1);
 
             QString sCPU = strList.at(aliceColumn + diff);
             if (strList.at(4 + diff) == "HEP-SPEC06")
@@ -801,6 +805,7 @@ bool ALICE::readRequirements(const QString &year)
     }
 
     mCurrentRequirementYear = year;
+
     return true;
 }
 
@@ -1233,11 +1238,12 @@ FundingAgency *ALICE::searchFA(const QString &n) const
         name = "UnitedKingdom-STFC";
     else if (name == "Latin America")
         name = "Brazil";
-    for (FundingAgency *fa : mFAs)
+    for (FundingAgency *fa : mFAs) {
         if (fa->name().contains(name) && fa->name().left(1) != "-") {
            return fa;
            break;
         }
+    }
     if (MainWindow::isDebug())
          qWarning() << QString("FA %1 not found").arg(name);
     return Q_NULLPTR;
@@ -1261,10 +1267,6 @@ FundingAgency *ALICE::searchSE(const QString &se) const
 Tier *ALICE::searchTier(const QString &n)
 {
     // search a Tier by name in the list of FAs
-
-//    if (mFAs.isEmpty()) {
-//        readRebus("2017"); // FIXME
-//    }
 
     Tier * rv = Q_NULLPTR;
     for (FundingAgency *fa : mFAs) {

@@ -10,8 +10,8 @@ int main(int argc, char *argv[])
 
     QFontIcon::addFont(":/fontawesome.ttf");
 
-//    MainWindow w;
-//    w.show();
+    MainWindow w;
+    w.show();
 
 
     return a.exec();

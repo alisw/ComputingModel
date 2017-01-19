@@ -40,8 +40,10 @@ class MainWindow : public QMainWindow
 public:
     enum PlotOptions {kMandOProfile, kRequirementsProfile, kPledgesProfile, kRegisteredDataProfile, kUsageProfile, kTierEfficiencyProfile, kUserEfficiencyProfile,
                       kEventSizeProfile};
+    enum LoadOptions {kEGIUsageReport};
 
     Q_ENUM (PlotOptions)
+    Q_ENUM (LoadOptions)
 
     MainWindow(QWidget *parent = 0);
     ~MainWindow();
@@ -54,16 +56,18 @@ protected:
     void paintEvent(QPaintEvent *);
 
 private slots:
+    void        load(qint32 opt);
     void        mousePressEvent(QMouseEvent *event);
     void        onTableClicked(const QModelIndex &index);
     void        parsePlotUrlFile(PlotOptions opt);
+    void        plot(qint32 opt);
     void        printCurrentWindow() const;
     void        resizeView() {mTableConsol->resizeColumnsToContents();}
     void        saveUrlFile(const QDate &date, Tier::TierCat cat);
-    void        selectDates(PlotOptions opt);
     void        showNetworkError(QNetworkReply::NetworkError er);
     void        transferProgress(qint64 readBytes, qint64 totalBytes);
     void        validateDates(MainWindow::PlotOptions opt);
+    void        validateDates(MainWindow::LoadOptions opt);
 
 private:
     void        createActions();
@@ -75,11 +79,7 @@ private:
     void        getDataFromWeb(const QDate &date, Tier::TierCat cat);
     void        getDataFromFile(MainWindow::PlotOptions opt);
     void        keyPressEvent(QKeyEvent *event);
-    void        loadGlance(QString year);
-    void        loadPledges(QString year);
-    void        loadRequirements(QString year);
-    void        loadUsageWLCG(QDate date, Tier::TierCat cat);
-    void        plot(qint32 opt);
+    void        loadUsageWLCG(QDate dateS, QDate dateE, Tier::TierCat cat);
     void        plProfile(PlotOptions opt);
     void        plProfileEventSize();
     void        plProfileMandO();
@@ -89,32 +89,35 @@ private:
     void        plUserEfficiency(PlotOptions opt);
     void        readMonthlyReport(QDate date);
     void        saveData(PlotOptions opt);
+    void        selectDates(PlotOptions opt);
+    void        selectDates(LoadOptions opt);
 
 
 
-    QMenu                   *mActionsMenu;       // Menu Tab with various actions
+//    QMenu                   *mActionsMenu;       // Menu Tab with various actions
     static bool             mDebug;              // True for running debug mode
     QAction                 *mDebugOffAction;    // Action for debug mode off
     QAction                 *mDebugOnAction;     // Action for debug mode on
     QMenu                   *mDebugMenu;         // Menu Tab to set the debug on/off
     QList<QAction*>         mDoReqPle;           // Triggers doing the final table of requirements and pledges
     QLabel                  *mDownLoadText;      // The text associated with the download status window + mProgressBar
-    QDateEdit               *mDEEnd;             // End date for the data to be plotted
-    QList<QAction*>         mGlanceData;         // Triggers Glance data reading
+    QDateEdit               *mDEEnd;             // End date for the data to be plotted or loaded
+    QDateEdit               *mDEStart;           // Start date for the data to be plotted or loaded
+//    QList<QAction*>         mGlanceData;         // Triggers Glance data reading
     QAction                 *mListAction;        // Action to list various stuff
+    QList<QAction*>         mLoAct;              // Triggers loads
     ConsoleWidget           *mLogConsol;         // The console where to write logging info
     QMdiSubWindow           *mLogConsolView;     // The view of the log consol in the mdi area
     QMdiArea                *mMdiArea;           // The mdi area in the centralwidget
     QNetworkAccessManager   *mNetworkManager;    // The network manager
     QList<QVector<double>*> mPlData;             // Data to be plotted
     QList<QString>          mPlDataName;         // Name of the data to be plotted
-    QList<QAction*>         mPledgedResources;   // Triggers reading pledged ressources
+//    QList<QAction*>         mPledgedResources;   // Triggers reading pledged ressources
     QList<QAction*>         mPlAct;              // Triggers plots
-    QMenu                   *mPlMenu;            // Menu for plotting
+//    QMenu                   *mPlMenu;            // Menu for plotting
     QProgressBar            *mProgressBar;       // A progress bar used when downloading files from www
     QList<QMenu*>           mReportsMenus;       // Menus for reading reports/year
-    QList<QAction*>         mRequiredResources;  // Triggers reading required ressources
-    QDateEdit               *mDEStart;           // Start date for the data to be plotted
+//    QList<QAction*>         mRequiredResources;  // Triggers reading required ressources
     QTableView              *mTableConsol;       // The table where the all stuff table is displayed
     QMdiSubWindow           *mTableConsolView;   // The view of the previous table
     QString                 mURL;                // URL name where to get data from

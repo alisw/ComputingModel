@@ -159,6 +159,8 @@
         <file>2014/9/reptier2.csv</file>
         <file>2014/9/TIER1_TIER1_sum_normcpu_TIER1_VO.csv</file>
         <file>EventSize.csv</file>
+        <file>2018/MandO.csv</file>
+        <file>2018/pledges.csv</file>
     </qresource>
     <qresource prefix="/"/>
 </RCC>
