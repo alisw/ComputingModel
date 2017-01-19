@@ -1,4 +1,4 @@
-// Class describing the ALIE collaboration: Funding agencies and M&O-A payers
+// Class describing the ALICE collaboration: Funding agencies and M&O-A payers
 // singleton
 // Y. Schutz November 2016
 
@@ -533,7 +533,7 @@ bool ALICE::readRebus(const QString &year)
     Resources res;
     res.clear(); // no resources pledged
     for (FundingAgency *fa : mFAs) {
-        if (!fa->hasTier() && fa->name().left(1) != "-") {
+        if (fa->name().left(1) != "-") {
             QList<QString> ceList = Naming::instance()->find(fa->name(), "", Naming::kCEML);
             QList<QString> seList = Naming::instance()->find(fa->name(), "", Naming::kSE);
             for (QString site : ceList) {
@@ -1039,6 +1039,10 @@ bool ALICE::readMonthlyReport(const QDate &date)
         FundingAgency *fa = searchSE(stoit.key());
         QString se = stoit.key();
         double storage = diskUsage[se];
+
+        if (!fa)
+            qDebug() << Q_FUNC_INFO << stoit.key();
+
         Resources::Resources_type diskOrTape = fa->addUsedDiskTape(month, se, storage);
         if (diskOrTape == Resources::kTAPE) {
             if (se.contains("CERN"))

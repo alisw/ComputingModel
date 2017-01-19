@@ -7,6 +7,7 @@
 QT       += core gui widgets printsupport
 QT       += charts
 QT       += network
+QT       += xml
 
 contains(TARGET, qml.*) {
     QT += qml quick
@@ -44,10 +45,8 @@ HEADERS  += mainwindow.h \
     mymdiarea.h \
     tier.h \
     naming.h \
-    pltablemodel.h
+    pltablemodel.h \
 
 RESOURCES += \
     images.qrc \
     data/data.qrc
-
-DISTFILES +=

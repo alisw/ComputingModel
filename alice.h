@@ -32,7 +32,7 @@ public:
 
     enum UserCat {kAliDaq, kAliProd, kAliTrain, kAliUsers};
 
-    static ALICE& instance();
+    static ALICE &instance();
 
     void                 addCPU(Tier::TierCat cat, double cpu);
     void                 addDisk(Tier::TierCat cat, double disk);
