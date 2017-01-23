@@ -26,6 +26,7 @@
 #include <QPicture>
 #include <QPrinter>
 #include <QProgressBar>
+#include <QSpinBox>
 #include <QSplitter>
 #include <QScatterSeries>
 #include <QSslConfiguration>
@@ -135,6 +136,25 @@ void MainWindow::list(ALICE::ListOptions val)
 void MainWindow::paintEvent(QPaintEvent *event)
 {
     QMainWindow::paintEvent(event);
+}
+
+//===========================================================================
+void MainWindow::findAName()
+{   //FIXME: Find a suitable name for this method
+    // display data retrieved from mURL
+
+    QNetworkReply *reply = qobject_cast<QNetworkReply*>(sender());
+    QByteArray data = reply->readAll();
+    if (data.isEmpty()) {
+        qCritical() << Q_FUNC_INFO << "no data found";
+        return;
+    }
+
+    QTextStream instream(&data);
+    QString line;
+    while (instream.readLineInto(&line)) {
+        qDebug() << Q_FUNC_INFO << line;
+    }
 }
 
 //===========================================================================
@@ -289,16 +309,24 @@ void MainWindow::validateDates(LoadOptions opt)
     //FIXME: widget does not close
     qobject_cast<QWidget*>(sender()->parent())->close();
     //FIXME: widget does not close
-    QDate dStart = mDEStart->date();
-    QDate dEnd   = mDEEnd->date();
 
     switch (opt) {
+    case kMandO:
+    {
+        QDate date = mDEStart->date();
+        getDataFromWeb(kMandO, date);
+        break;
+    }
     case kEGIUsageReport:
-        {
+    {
+        QDate dStart = mDEStart->date();
+        QDate dEnd   = mDEEnd->date();
         loadUsageWLCG(dStart, dEnd, Tier::kT1);
         loadUsageWLCG(dStart, dEnd, Tier::kT2);
         break;
-        }
+    }
+    default:
+        break;
     }
 }
 
@@ -552,6 +580,9 @@ void MainWindow::load(qint32 opt)
 {
     // select various optoions for loading data
     switch (opt) {
+    case kMandO:
+        selectDates(kMandO);
+        break;
     case kEGIUsageReport:
         selectDates(kEGIUsageReport);
         break;
@@ -1145,6 +1176,36 @@ void MainWindow:: getDataFromWeb(PlotOptions opt)
 }
 
 //===========================================================================
+void MainWindow::getDataFromWeb(MainWindow::LoadOptions opt, const QDate &date)
+{
+    // connect to the mURL and continue
+    switch (opt) {
+    case kMandO:
+    {
+        qint32 year = date.year();
+        mURL = QString("https://dfsweb.web.cern.ch/dfsweb/services/dfs/dfsbrowser.aspx/websites/a/alicecomputingresources/data/2017/MandO.csv");
+
+        break;
+    }
+    default:
+        break;
+    }
+    QNetworkRequest request;
+    QSslConfiguration conf = request.sslConfiguration();
+    conf.setPeerVerifyMode(QSslSocket::VerifyNone);
+    request.setSslConfiguration(conf);
+    request.setUrl(mURL);
+
+    if (!mNetworkManager)
+        mNetworkManager = new QNetworkAccessManager(this);
+    QNetworkReply *reply = mNetworkManager->get(request);
+
+
+    connect(reply, &QNetworkReply::finished, this, [this]{ findAName(); });
+    connect(reply, SIGNAL(error(QNetworkReply::NetworkError)), this, SLOT(showNetworkError(QNetworkReply::NetworkError)));
+}
+
+//===========================================================================
 void MainWindow::getDataFromWeb(const QDate &date, Tier::TierCat cat)
 {
     // connect to the mURL and continue with saveURLFile when connection established
@@ -1173,7 +1234,6 @@ void MainWindow::getDataFromWeb(const QDate &date, Tier::TierCat cat)
 
 
     connect(reply, SIGNAL(downloadProgress(qint64,qint64)), this, SLOT(transferProgress(qint64,qint64)));
-    connect(reply, &QNetworkReply::finished, this, [date, cat, this]{ saveUrlFile(date, cat); });
     connect(reply, SIGNAL(error(QNetworkReply::NetworkError)), this, SLOT(showNetworkError(QNetworkReply::NetworkError)));
 }
 
@@ -1950,40 +2010,51 @@ void MainWindow::selectDates(MainWindow::LoadOptions opt)
 
     QWidget *datesel = new QWidget();
 
-    qDebug() << Q_FUNC_INFO << datesel;
-
     datesel->setAttribute(Qt::WA_DeleteOnClose);
     datesel->setWindowTitle("Select start and end date");
 
+    mDEStart = new QDateEdit();
+
+    QLabel *startDate = new QLabel;
+    QGridLayout *layout = new QGridLayout;
+    layout->addWidget(startDate, 0, 0, 1, 1, Qt::AlignLeft);
+
+    switch (opt) {
+    case kMandO:
+    {
+        startDate->setText("Year");
+        QSpinBox *sb = new QSpinBox;
+        sb->setMaximum(QDate::currentDate().year());
+        sb->setMinimum(2014);
+        sb->setSingleStep(1);
+        mDEStart->setDate(QDate(sb->value(), 1, 1));
+        layout->addWidget(sb, 0, 1, 1, 1, Qt::AlignLeft);
+        break;
+    }
+    case kEGIUsageReport:
+    {
+        startDate->setText("StartDate");
+        QDate today = QDate::currentDate();
+        mDEStart->setDate(today.addMonths(-1));
+        mDEStart->setMaximumDate(today);
+        mDEStart->setMinimumDate(QDate(2014, 9, 1));
+        mDEStart->setCalendarPopup(true);
+        mDEEnd = new QDateEdit();
+        mDEEnd->setDate(mDEStart->date().addMonths(+1));
+        layout->addWidget(mDEStart, 0, 1, 1, 1, Qt::AlignLeft);
+    }
+        break;
+    default:
+        break;
+    }
 
     //FIXME only start date and end date = + 1 month or today
-    QLabel *startDate = new QLabel("Start Date");
-    QLabel *endDate   = new QLabel("End Date");
-
-    QDate dateStart(QDate::currentDate());
-    mDEStart = new QDateEdit();
-    mDEStart->setMaximumDate(QDate::currentDate());
-    mDEStart->setMinimumDate(QDate(2014, 9, 1));
-    mDEStart->setCalendarPopup(true);
-    mDEStart->setDate(dateStart);
-    QDate dateEnd = mDEStart->date().addMonths(-1);
-    mDEEnd = new QDateEdit();
-    mDEEnd->setMaximumDate(QDate::currentDate());
-    mDEEnd->setMinimumDate(QDate(2014, 9, 1));
-    mDEEnd->setCalendarPopup(true);
-    mDEEnd->setDate(dateEnd);
 
     QPushButton *okButton = new QPushButton("OK", datesel);
 
-    qDebug() << Q_FUNC_INFO << okButton;
-
     connect(okButton, &QPushButton::clicked, this, [opt, this]{ validateDates(opt); });
 
-    QGridLayout *layout = new QGridLayout;
-    layout->addWidget(startDate, 0, 0, 1, 1, Qt::AlignLeft);
-    layout->addWidget(mDEStart, 0, 1, 1, 1, Qt::AlignLeft);
-    layout->addWidget(endDate,   1, 0, 1, 1, Qt::AlignLeft);
-    layout->addWidget(mDEEnd, 1, 1, 1, 1, Qt::AlignLeft);
+
     layout->addWidget(okButton, 2, 0, 1, 2, Qt::AlignHCenter);
     datesel->setLayout(layout);
     datesel->show();

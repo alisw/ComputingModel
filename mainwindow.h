@@ -40,7 +40,7 @@ class MainWindow : public QMainWindow
 public:
     enum PlotOptions {kMandOProfile, kRequirementsProfile, kPledgesProfile, kRegisteredDataProfile, kUsageProfile, kTierEfficiencyProfile, kUserEfficiencyProfile,
                       kEventSizeProfile};
-    enum LoadOptions {kEGIUsageReport};
+    enum LoadOptions {kMandO, kEGIUsageReport};
 
     Q_ENUM (PlotOptions)
     Q_ENUM (LoadOptions)
@@ -56,6 +56,7 @@ protected:
     void paintEvent(QPaintEvent *);
 
 private slots:
+    void        findAName();
     void        load(qint32 opt);
     void        mousePressEvent(QMouseEvent *event);
     void        onTableClicked(const QModelIndex &index);
@@ -76,6 +77,7 @@ private:
     void        setDebugMode(bool val);
     void        doeReqAndPle(const QString &year);
     void        getDataFromWeb(MainWindow::PlotOptions opt);
+    void        getDataFromWeb(MainWindow::LoadOptions opt, const QDate &date);
     void        getDataFromWeb(const QDate &date, Tier::TierCat cat);
     void        getDataFromFile(MainWindow::PlotOptions opt);
     void        keyPressEvent(QKeyEvent *event);
