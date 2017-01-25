@@ -38,9 +38,9 @@ class MainWindow : public QMainWindow
     Q_OBJECT
 
 public:
-    enum PlotOptions {kMandOProfile, kRequirementsProfile, kPledgesProfile, kRegisteredDataProfile, kUsageProfile, kTierEfficiencyProfile, kUserEfficiencyProfile,
+    enum PlotOptions {kMandOProfile, kRequirementsProfile, kPledgesProfile, kRegisteredDataProfile, kUsageProfile, kUsage_PledgesProfile, kUsage_RequiredProfile, kTierEfficiencyProfile, kUserEfficiencyProfile,
                       kEventSizeProfile};
-    enum LoadOptions {kMandO, kEGIUsageReport};
+    enum LoadOptions {kEGICPUReportT1, kEGICPUReportT2, kMLCPUReport, kMLStorageReport};
 
     Q_ENUM (PlotOptions)
     Q_ENUM (LoadOptions)
@@ -64,6 +64,7 @@ private slots:
     void        plot(qint32 opt);
     void        printCurrentWindow() const;
     void        resizeView() {mTableConsol->resizeColumnsToContents();}
+    void        saveUrlFile(const QDate &date, LoadOptions opt);
     void        saveUrlFile(const QDate &date, Tier::TierCat cat);
     void        showNetworkError(QNetworkReply::NetworkError er);
     void        transferProgress(qint64 readBytes, qint64 totalBytes);
@@ -77,10 +78,11 @@ private:
     void        setDebugMode(bool val);
     void        doeReqAndPle(const QString &year);
     void        getDataFromWeb(MainWindow::PlotOptions opt);
-    void        getDataFromWeb(MainWindow::LoadOptions opt, const QDate &date);
     void        getDataFromWeb(const QDate &date, Tier::TierCat cat);
+    void        getDataFromWeb(const QDate &date, LoadOptions opt);
     void        getDataFromFile(MainWindow::PlotOptions opt);
     void        keyPressEvent(QKeyEvent *event);
+    void        loadUsageML(LoadOptions opt, QDateTime dateS, QDateTime dateE);
     void        loadUsageWLCG(QDate dateS, QDate dateE, Tier::TierCat cat);
     void        plProfile(PlotOptions opt);
     void        plProfileEventSize();

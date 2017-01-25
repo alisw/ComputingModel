@@ -8,7 +8,7 @@
 
 //===========================================================================
 Tier::Tier(QObject *parent) : QObject(parent),
-    mTierCategory(kUnknown), mWLCGAliasName(""), mWLCGName("")
+    mTierCategory(kUnknown), mWLCGName("")
 {
     // default ctor
     mResources.clear();
@@ -21,7 +21,6 @@ Tier::Tier(QString name, Tier::TierCat cat, Resources &res, QObject *parent) : Q
 {
     // ctor with assignation
 
-    mWLCGAliasName = "";
     mWLCGName = name;
     mResources.setObjectName(res.objectName());
     mResources.setCPU(res.getCPU());

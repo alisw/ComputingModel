@@ -88,6 +88,12 @@ Resources::Resources_type FundingAgency::addUsedDiskTape(const QString &month, c
     // add used disk or trape storage from this fa as reported by ML
     Resources::Resources_type rv;
 
+    if (!mUsedResourcesML[month]) {
+        Resources *res = new Resources(this);
+        res->setObjectName("Used Resources from ML");
+        mUsedResourcesML[month] =  res;
+    }
+
     if (se.contains("TAPE") || se.contains("T0ALICE") || se.contains("CASTOR2")) {
         mUsedResourcesML[month]->setTape(mUsedResourcesML[month]->getTape() + storage);
         rv = Resources::kTAPE;
@@ -199,15 +205,21 @@ Tier *FundingAgency::search(const QString &n, bool aliasing) const
     Tier *rv = Q_NULLPTR;
 
     for (Tier *t : mTiers) {
-        if (n == t->getWLCGName() || n == t->getWLCGAlias()) {
+        if (n == t->getWLCGName()) {
             rv = t;
             break;
-        }        
+        }
+        for (qint32 index = 0; index < t->countWLCGAlias(); index++)
+            if (n == t->getWLCGAlias(index)) {
+                rv = t;
+                break;
+            }
     }
+
     if (!rv && aliasing) {
         for (Tier *t : mTiers) {
-            if (t->category() == Tier::kT2 && t->getWLCGAlias() == "") {
-                t->setAlias(n);
+            if (t->category() == Tier::kT2) {
+                t->addAlias(n);
                 rv = t;
                 break;
             }

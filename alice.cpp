@@ -815,9 +815,9 @@ bool ALICE::readMonthlyReport(const QDate &date)
     // read the montly report
 
     if (mFAs.isEmpty()) {
-        readGlanceData(QString("%1").arg(date.year()));
+        readGlanceData(QString("%1").arg(QDate::currentDate().year())); // get the latest data
         organizeFA();
-        readRebus(QString("%1").arg(date.year()));
+        readRebus(QString("%1").arg(QDate::currentDate().year())); // get the latest data
     }
 
     mT0Used.clear();
@@ -828,7 +828,9 @@ bool ALICE::readMonthlyReport(const QDate &date)
     QString month = date.toString("MMMM");
     mCurrentUsedDate = date;
 
-    // First read the monthly report provided by EGI (http://accounting.egi.eu/egi.php)
+    // First read the monthly report provided by
+    // EGI (http://accounting.egi.eu/egi.php) until 1/12/2016 and then from
+    // EGI (https://accounting-next.egi.eu/wlcg/tier1/normcpu/TIER1/VO/2016/12/2016/12/lhc/onlyinfrajobs/)
     // one file for T0+T1s and one for T2s
     // select Norm. Sum CPU (HEPSPEC06-hours)
     // format T0+T1s
@@ -840,11 +842,13 @@ bool ALICE::readMonthlyReport(const QDate &date)
     QFile  csvFile(fileName);
     if(!csvFile.open(QIODevice::ReadOnly))
         return false;
-    // read header 5 lines
-    csvFile.readLine();
-    csvFile.readLine();
-    csvFile.readLine();
-    csvFile.readLine();
+    // read header 4 lines for data collected before December 2016
+    if (date < QDate(2016, 12, 1)) {
+        csvFile.readLine();
+        csvFile.readLine();
+        csvFile.readLine();
+        csvFile.readLine();
+    }
     QString line = csvFile.readLine();
     QStringList strList = line.split(',');
     qint32 aliceColumn = -1;
@@ -866,7 +870,7 @@ bool ALICE::readMonthlyReport(const QDate &date)
         QString site = strList.at(0);
         if (site == "Total")
             break;
-        if (strList.at(aliceColumn) != "") {
+        if (strList.at(aliceColumn) != "" && strList.at(aliceColumn) != " 0") {
             QString scpu  = strList.at(aliceColumn);
             double cpu = scpu.toDouble();
             Tier* tier = searchTier(site);
@@ -888,18 +892,23 @@ bool ALICE::readMonthlyReport(const QDate &date)
     mT0Used.setCPU(cpuUSumT0, Resources::kHEPSPEC06);
     mT1Used.setCPU(cpuUSumT1, Resources::kHEPSPEC06);
 
-    // format T2s from http://accounting.egi.eu/reptier2.php
-    // line 1-4: header to be skipped
+    // format T2s from http://accounting.egi.eu/reptier2.php before 1/12/2016 and after from
+    //                 https://accounting-next.egi.eu/wlcg/tier2/normcpu/FEDERATION/VO/2015/12/2016/12/lhc/onlyinfrajobs/
+    // line 1-4: header to be skipped only before 1/12/2016
     // line 5: COUNTRY,FEDERATION,2016 CPU Pledge (HEPSPEC06),pledge inc. efficiency (HEPSPEC06-Hrs),SITE,alice,atlas,cms,lhcb,Total,delivered as % of pledge
     fileName = QString(":/data/%1/%2/reptier2.csv").arg(date.year()).arg(date.month());
     csvFile.setFileName(fileName);
     if(!csvFile.open(QIODevice::ReadOnly))
         return false;
-    // read header 5 lines
-    csvFile.readLine();
-    csvFile.readLine();
-    csvFile.readLine();
-    csvFile.readLine();
+    // read header 4 lines before 1/12/2016
+    qint32 federationIndex = 0;
+    if (date < QDate(2016, 12, 1)) {
+        csvFile.readLine();
+        csvFile.readLine();
+        csvFile.readLine();
+        csvFile.readLine();
+        federationIndex = 1;
+    }
     line = csvFile.readLine();
     strList = line.split(',');
     aliceColumn = -1;
@@ -918,14 +927,18 @@ bool ALICE::readMonthlyReport(const QDate &date)
         line = csvFile.readLine();
         strList = line.split(',');
         QString country = strList.at(0);
+        if (date >= QDate(2016, 12, 1)) {
+            country = country.left(2);
+            country = Naming::instance()->find(country);
+        }
         if (country == "")
             continue;
-        QString federation = strList.at(1);
+        QString federation = strList.at(federationIndex);
         if (federation.contains("Total"))
             break;
-        if (strList.at(aliceColumn) != "0") {
-            QString scpu  = strList.at(aliceColumn);
-            double cpu = scpu.toDouble();
+        QString scpu  = strList.at(aliceColumn);
+        double cpu = scpu.toDouble();
+        if (cpu != 0) {
             FundingAgency *fa = searchFA(country);
             if (!fa) {
                 qWarning() << country << "is not an ALICE member";
@@ -933,8 +946,7 @@ bool ALICE::readMonthlyReport(const QDate &date)
             }
             Tier *tier = fa->search(federation, true);
             if (!tier) {
-                qDebug() << date << line;
-                qWarning() << federation << " not found!";
+                qWarning() << federation << " site not found!";
                 continue;
             }
             Resources res;
@@ -1042,11 +1054,14 @@ bool ALICE::readMonthlyReport(const QDate &date)
         stoit.next();
         diskUsage[stoit.key()] = stoit.value() / linecount / 1000000; //units = PB
         FundingAgency *fa = searchSE(stoit.key());
+
+        if (!fa) {
+            qCritical() << Q_FUNC_INFO << "FA for " << stoit.key() << "not found";
+            exit(1);
+        }
+
         QString se = stoit.key();
         double storage = diskUsage[se];
-
-        if (!fa)
-            qDebug() << Q_FUNC_INFO << stoit.key();
 
         Resources::Resources_type diskOrTape = fa->addUsedDiskTape(month, se, storage);
         if (diskOrTape == Resources::kTAPE) {

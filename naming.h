@@ -12,10 +12,11 @@ class Naming : public QObject
     Q_ENUMS (Elements)
 
 public:    
-    enum Elements {kFA, kSE, kCEML, kCEWLCG};
+    enum Elements {kFASHORT, kFA, kSE, kCEML, kCEWLCG};
     static Naming *instance();
 
     const QList<QString> find(const QString &faName, QString wlcg, Elements el);
+    const QString        find(const QString &faShort);
 
 private:
     explicit Naming(QObject *parent = 0);

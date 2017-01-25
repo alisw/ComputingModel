@@ -29,6 +29,7 @@ Naming::Naming(QObject *parent) : QObject(parent)
     while (!csvFile.atEnd()) {
         line = csvFile.readLine();
         QStringList strlist = line.split(';');
+        QString fas    = strlist[kFASHORT];
         QString fa     = strlist[kFA];
         QString se     = strlist[kSE];
         QString ceML   = strlist[kCEML];
@@ -36,6 +37,7 @@ Naming::Naming(QObject *parent) : QObject(parent)
         ceWLCG.remove("\r\n");
 
         QVector<QString> *vec = new QVector<QString>(4);
+        vec->insert(kFASHORT,fas);
         vec->insert(kFA,     fa);
         vec->insert(kSE,     se);
         vec->insert(kCEML,   ceML);
@@ -82,6 +84,22 @@ const QList<QString> Naming::find(const QString &faName, QString wlcg, Elements 
             if (!vect->at(el).isEmpty())
                 rv.append(vect->at(el));
     }
+
+    return rv;
+}
+
+//===========================================================================
+const QString Naming::find(const QString &faShort)
+{
+    // returns the country name corresponding to the abbreviation faShort
+    QString rv = "";
+
+    for (QVector<QString> *vect : mDict) {
+        if (vect->at(kFASHORT) == faShort) {
+            rv = vect->at(kFA);
+            break;
+        }
+     }
 
     return rv;
 }

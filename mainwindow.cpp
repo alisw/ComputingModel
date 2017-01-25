@@ -311,18 +311,32 @@ void MainWindow::validateDates(LoadOptions opt)
     //FIXME: widget does not close
 
     switch (opt) {
-    case kMandO:
-    {
-        QDate date = mDEStart->date();
-        getDataFromWeb(kMandO, date);
-        break;
-    }
-    case kEGIUsageReport:
+    case kEGICPUReportT1:
     {
         QDate dStart = mDEStart->date();
         QDate dEnd   = mDEEnd->date();
         loadUsageWLCG(dStart, dEnd, Tier::kT1);
+        break;
+    }
+    case kEGICPUReportT2:
+    {
+        QDate dStart = mDEStart->date();
+        QDate dEnd   = mDEEnd->date();
         loadUsageWLCG(dStart, dEnd, Tier::kT2);
+        break;
+    }
+    case kMLCPUReport:
+    {
+        QDateTime dStart(mDEStart->date());
+        QDateTime dEnd(mDEEnd->date());
+        loadUsageML(kMLCPUReport, dStart, dEnd);
+        break;
+    }
+    case kMLStorageReport:
+    {
+        QDateTime dStart(mDEStart->date());
+        QDateTime dEnd(mDEEnd->date());
+        loadUsageML(kMLStorageReport, dStart, dEnd);
         break;
     }
     default:
@@ -580,11 +594,17 @@ void MainWindow::load(qint32 opt)
 {
     // select various optoions for loading data
     switch (opt) {
-    case kMandO:
-        selectDates(kMandO);
+    case kEGICPUReportT1:
+        selectDates(kEGICPUReportT1);
         break;
-    case kEGIUsageReport:
-        selectDates(kEGIUsageReport);
+    case kEGICPUReportT2:
+        selectDates(kEGICPUReportT2);
+        break;
+    case kMLCPUReport:
+        selectDates(kMLCPUReport);
+        break;
+    case kMLStorageReport:
+        selectDates(kMLStorageReport);
         break;
     default:
         break;
@@ -599,11 +619,36 @@ void MainWindow::mousePressEvent(QMouseEvent *event)
 }
 
 //===========================================================================
+void MainWindow::loadUsageML(LoadOptions opt, QDateTime dateS, QDateTime dateE)
+{
+    // load CPU or storage usage from MonALISA
+    // CPU:     http://alimonitor.cern.ch/display?annotation.enabled=true&imgsize=1024x600&interval.max=0&interval.min=2628000000&page=jobResUsageSum_time_si2k&download_data_csv=true
+    // Storage: http://alimonitor.cern.ch/display?&interval.max=0&interval.min=30301200000&job_stats.owner=brijesh&modules=SE%2Fhist_used&page=SE%2Fhist&download_data_csv=true
+
+    QDateTime today = QDateTime(QDate::currentDate());
+    qint32 max = qAbs(today.msecsTo(dateS));
+    qint32 min = qAbs(today.msecsTo(dateE));
+    switch (opt) {
+    case kMLCPUReport:
+        mURL = QString("http://alimonitor.cern.ch/display?interval.max=%1&interval.min=%2&page=jobResUsageSum_time_si2k&download_data_csv=true").arg(max).arg(min);
+        break;
+    case kMLStorageReport:
+        mURL = QString("http://alimonitor.cern.ch/display?&interval.max=%1&interval.min=%2").arg(max).arg(min);
+        mURL.append("&job_stats.owner=brijesh&modules=SE%2Fhist_used&page=SE%2Fhist&download_data_csv=true");
+        break;
+    default:
+        break;
+    }
+    getDataFromWeb(dateS.date(), opt);
+}
+
+//===========================================================================
 void MainWindow::loadUsageWLCG(QDate dateS, QDate dateE, Tier::TierCat cat)
 {
    // load the CPU usage from EGI (new portal).
    // Tier1: https://accounting-support.egi.eu/custom_xml.php?query=normcpu&option=TIER1&sYear=yyyy&sMonth=mm&eYear=yyyy&eMonth=mm&yrange=TIER1&xrange=VO&groupVO=lhc&localJobs=onlyinfrajobs&tree=TIER1&optval=&csv=true
-   // Tier2: https://accounting-support.egi.eu/custom_xml.php?query=normcpu&option=COUNTRY&sYear=yyyy&sMonth=mm&eYear=yyyy&eMonth=m&yrange=FEDERATION&xrange=VO&groupVO=egi&groupVO=egi&localJobs=onlyinfrajobs&tree=TIER2&optval=&csv=true
+   // Tier2: https://accounting-support.egi.eu/custom_xml.php?query=normcpu&option=COUNTRY_T2&sYear=yyyy&sMonth=mm&eYear=yyyy&eMonth=mm&yrange=FEDERATION&xrange=VO&groupVO=egi&groupVO=egi&localJobs=onlyinfrajobs&tree=TIER2&optval=&csv=true
+
     qint32 sYear = dateS.year();
     qint32 eYear = dateE.year();
     qint32 sMonth = dateS.month();
@@ -622,6 +667,7 @@ void MainWindow::loadUsageWLCG(QDate dateS, QDate dateE, Tier::TierCat cat)
     default:
         break;
     }
+
     scat.remove("k");
     scat = scat.toUpper();
     switch (cat) {
@@ -632,13 +678,14 @@ void MainWindow::loadUsageWLCG(QDate dateS, QDate dateE, Tier::TierCat cat)
                         arg(scat).arg(sYear).arg(sMonth).arg(eYear).arg(eMonth);
         break;
     case Tier::kT1:
-        mURL = QString("https://accounting-support.egi.eu/custom_xml.php?query=normcpu&option=COUNTRY&"
-                       "sYear=%1&sMonth=%2&eYear=%3&eMonth=%4&yrange=%5&xrange=VO&"
+        mURL = QString("https://accounting-support.egi.eu/custom_xml.php?query=normcpu&option=%1&"
+                       "sYear=%2&sMonth=%3&eYear=%4&eMonth=%5&yrange=%1&xrange=VO&"
                        "groupVO=lhc&localJobs=onlyinfrajobs&tree=%1&optval=&csv=true").
-                        arg(sYear).arg(sMonth).arg(eYear).arg(eMonth).arg(scat);
+                        arg(scat).arg(sYear).arg(sMonth).arg(eYear).arg(eMonth);
         break;
     case Tier::kT2:
-        mURL = QString("https://accounting-support.egi.eu/custom_xml.php?query=normcpu&option=COUNTRY&"
+        //FIXME this is not the right format
+        mURL = QString("https://accounting-support.egi.eu/custom_xml.php?query=normcpu&option=COUNTRY_T2&"
                        "sYear=%1&sMonth=%2&eYear=%3&eMonth=%4&yrange=FEDERATION&xrange=VO&groupVO=egi&"
                        "groupVO=egi&localJobs=onlyinfrajobs&tree=%5&optval=&csv=true").
                         arg(sYear).arg(sMonth).arg(eYear).arg(eMonth).arg(scat);
@@ -649,6 +696,7 @@ void MainWindow::loadUsageWLCG(QDate dateS, QDate dateE, Tier::TierCat cat)
 
     getDataFromWeb(dateS, cat);
 }
+
 
 //===========================================================================
 void MainWindow::plot(qint32 opt)
@@ -670,6 +718,12 @@ void MainWindow::plot(qint32 opt)
         break;
     case kUsageProfile:
         plProfile(kUsageProfile);
+        break;
+    case kUsage_PledgesProfile:
+        plProfile(kUsage_PledgesProfile);
+        break;
+    case kUsage_RequiredProfile:
+        plProfile(kUsage_PledgesProfile);
         break;
     case kTierEfficiencyProfile:
         selectDates(kTierEfficiencyProfile);
@@ -1176,36 +1230,6 @@ void MainWindow:: getDataFromWeb(PlotOptions opt)
 }
 
 //===========================================================================
-void MainWindow::getDataFromWeb(MainWindow::LoadOptions opt, const QDate &date)
-{
-    // connect to the mURL and continue
-    switch (opt) {
-    case kMandO:
-    {
-        qint32 year = date.year();
-        mURL = QString("https://dfsweb.web.cern.ch/dfsweb/services/dfs/dfsbrowser.aspx/websites/a/alicecomputingresources/data/2017/MandO.csv");
-
-        break;
-    }
-    default:
-        break;
-    }
-    QNetworkRequest request;
-    QSslConfiguration conf = request.sslConfiguration();
-    conf.setPeerVerifyMode(QSslSocket::VerifyNone);
-    request.setSslConfiguration(conf);
-    request.setUrl(mURL);
-
-    if (!mNetworkManager)
-        mNetworkManager = new QNetworkAccessManager(this);
-    QNetworkReply *reply = mNetworkManager->get(request);
-
-
-    connect(reply, &QNetworkReply::finished, this, [this]{ findAName(); });
-    connect(reply, SIGNAL(error(QNetworkReply::NetworkError)), this, SLOT(showNetworkError(QNetworkReply::NetworkError)));
-}
-
-//===========================================================================
 void MainWindow::getDataFromWeb(const QDate &date, Tier::TierCat cat)
 {
     // connect to the mURL and continue with saveURLFile when connection established
@@ -1235,6 +1259,41 @@ void MainWindow::getDataFromWeb(const QDate &date, Tier::TierCat cat)
 
     connect(reply, SIGNAL(downloadProgress(qint64,qint64)), this, SLOT(transferProgress(qint64,qint64)));
     connect(reply, SIGNAL(error(QNetworkReply::NetworkError)), this, SLOT(showNetworkError(QNetworkReply::NetworkError)));
+    connect(reply, &QNetworkReply::finished, this, [date, cat, this]{ saveUrlFile(date, cat); });
+}
+
+//===========================================================================
+void MainWindow::getDataFromWeb(const QDate &date, MainWindow::LoadOptions opt)
+{
+    // connect to the mURL and continue with saveURLFile when connection established
+
+    QWidget *w = new QWidget();
+    w->setAttribute(Qt::WA_DeleteOnClose);
+    w->setLayout(new QVBoxLayout);
+
+    mProgressBar = new QProgressBar(w);
+    w->layout()->addWidget(mProgressBar);
+
+    mDownLoadText = new QLabel;
+    mDownLoadText->setText(QString("Downloading from %1").arg(mURL));
+    mDownLoadText->setAlignment(Qt::AlignHCenter);
+    w->layout()->addWidget(mDownLoadText);
+    w->show();
+
+    QNetworkRequest request;
+    QSslConfiguration conf = request.sslConfiguration();
+    conf.setPeerVerifyMode(QSslSocket::VerifyNone);
+    request.setSslConfiguration(conf);
+    request.setUrl(mURL);
+
+    if (!mNetworkManager)
+        mNetworkManager = new QNetworkAccessManager(this);
+    QNetworkReply *reply = mNetworkManager->get(request);
+
+
+    connect(reply, SIGNAL(downloadProgress(qint64,qint64)), this, SLOT(transferProgress(qint64,qint64)));
+    connect(reply, SIGNAL(error(QNetworkReply::NetworkError)), this, SLOT(showNetworkError(QNetworkReply::NetworkError)));
+    connect(reply, &QNetworkReply::finished, this, [date, opt, this]{ saveUrlFile(date, opt); });
 }
 
 //===========================================================================
@@ -1337,7 +1396,7 @@ void MainWindow::plProfile(PlotOptions opt, Resources::Resources_type type)
                 model->addData(year, dataVec);
             }
         }
-    } else if (opt == kUsageProfile) {
+    } else if (opt == kUsageProfile || opt == kUsage_PledgesProfile || opt == kUsage_RequiredProfile) {
         xAxisFormat = "MM-yyyy";
         xAxisTitle = "Date";
         ALICE::instance().setDrawTable(false);
@@ -1349,10 +1408,30 @@ void MainWindow::plProfile(PlotOptions opt, Resources::Resources_type type)
             qSort(monthes.begin(), monthes.end(), lt);
             for (QString month : monthes) {
                 QDate date(year.toInt(), month.toInt(), 1);
-                dataVec->replace(colT0 - 2, ALICE::instance().getUsed(Tier::kT0,   type, date));
-                dataVec->replace(colT1 - 2, ALICE::instance().getUsed(Tier::kT1,   type, date));
-                dataVec->replace(colT2 - 2, ALICE::instance().getUsed(Tier::kT2,   type, date));
-                dataVec->replace(colTo - 2, ALICE::instance().getUsed(Tier::kTOTS, type, date));
+                double value0 = 0.0;
+                double value1 = 0.0;
+                double value2 = 0.0;
+                double valueo = 0.0;
+                if (opt == kUsageProfile) {
+                    value0 = ALICE::instance().getUsed(Tier::kT0,   type, date);
+                    value1 = ALICE::instance().getUsed(Tier::kT1,   type, date);
+                    value2 = ALICE::instance().getUsed(Tier::kT2,   type, date);
+                    valueo = ALICE::instance().getUsed(Tier::kTOTS, type, date);
+                } else if (opt == kUsage_PledgesProfile){
+                    value0 = 100 * ALICE::instance().getUsed(Tier::kT0,   type, date) / ALICE::instance().getPledged(Tier::kT0,   type, year);
+                    value1 = 100 * ALICE::instance().getUsed(Tier::kT1,   type, date) / ALICE::instance().getPledged(Tier::kT1,   type, year);
+                    value2 = 100 * ALICE::instance().getUsed(Tier::kT2,   type, date) / ALICE::instance().getPledged(Tier::kT2,   type, year);
+                    valueo = 100 * ALICE::instance().getUsed(Tier::kTOTS, type, date) / ALICE::instance().getPledged(Tier::kTOTS, type, year);
+                } else {
+                    value0 = 100 * ALICE::instance().getUsed(Tier::kT0,   type, date) / ALICE::instance().getRequired(Tier::kT0,   type, year);
+                    value1 = 100 * ALICE::instance().getUsed(Tier::kT1,   type, date) / ALICE::instance().getRequired(Tier::kT1,   type, year);
+                    value2 = 100 * ALICE::instance().getUsed(Tier::kT2,   type, date) / ALICE::instance().getRequired(Tier::kT2,   type, year);
+                    valueo = 100 * ALICE::instance().getUsed(Tier::kTOTS, type, date) / ALICE::instance().getRequired(Tier::kTOTS, type, year);
+                }
+                dataVec->replace(colT0 - 2, value0);
+                dataVec->replace(colT1 - 2, value1);
+                dataVec->replace(colT2 - 2, value2);
+                dataVec->replace(colTo - 2, valueo);
                 model->addData(QDateTime(date), dataVec);
             }
         }
@@ -1392,20 +1471,24 @@ void MainWindow::plProfile(PlotOptions opt, Resources::Resources_type type)
     chart->addAxis(axisX, Qt::AlignBottom);
 
     QValueAxis *axisY = new QValueAxis;
-    axisY->setLabelFormat("%i");
+    axisY->setLabelFormat("%.1f");
     QString title;
-    switch (type) {
-    case Resources::kCPU:
-        title = "CPU (kHEPSpec06)";
-        break;
-    case Resources::kDISK:
-        title = "DISK (PB)";
-        break;
-    case Resources::kTAPE:
-        title = "TAPE (PB)";
-        break;
-    default:
-        break;
+    if (opt == kUsage_PledgesProfile || opt == kUsage_RequiredProfile)
+        title = "\%";
+    else {
+        switch (type) {
+        case Resources::kCPU:
+            title = "CPU (kHEPSpec06)";
+            break;
+        case Resources::kDISK:
+            title = "DISK (PB)";
+            break;
+        case Resources::kTAPE:
+            title = "TAPE (PB)";
+            break;
+        default:
+            break;
+        }
     }
     axisY->setTitleText(title);
     axisY->setMax(ymax);
@@ -1594,6 +1677,39 @@ void MainWindow::printCurrentWindow() const
     mb->show();
 }
 
+void MainWindow::saveUrlFile(const QDate &date, MainWindow::LoadOptions opt)
+{
+    // save the url as a file
+    QNetworkReply *reply = qobject_cast<QNetworkReply*>(sender());
+    QByteArray data = reply->readAll();
+    if (data.isEmpty()) {
+        qCritical() << Q_FUNC_INFO << "no data found";
+        return;
+    }
+
+    mDownLoadText->setText("DONE");
+
+    QTextStream instream(&data);
+    QString line;
+    //FIXME: save file to the righ place
+//    QString dir(QString("data/%1/%2/").arg(date.year()).arg(date.month()));
+    QString dir("/Users/schutz/Desktop/");
+    QString fileName;
+    if (opt == kMLCPUReport)
+        fileName = "CPU_Usage.csv";
+    else if (opt == kMLStorageReport)
+        fileName = "Disk_Tape_Usage.csv";
+    QFile file( fileName.prepend(dir));
+    if ( file.open(QIODevice::ReadWrite) )
+    {
+        QTextStream oustream( &file );
+        while (instream.readLineInto(&line)) {
+            oustream << line << endl;
+        }
+        file.close();
+    }
+}
+
 //===========================================================================
 void MainWindow::saveUrlFile(const QDate &date, Tier::TierCat cat)
 {
@@ -1615,7 +1731,7 @@ void MainWindow::saveUrlFile(const QDate &date, Tier::TierCat cat)
     QString fileName;
     if (cat == Tier::kT0 || cat == Tier::kT1)
         fileName = "TIER1_TIER1_sum_normcpu_TIER1_VO.csv";
-    else
+    else if (cat == Tier::kT2)
         fileName = "reptier2.csv";
     QFile file( fileName.prepend(dir));
     if ( file.open(QIODevice::ReadWrite) )
@@ -1667,6 +1783,22 @@ void MainWindow::plProfile(PlotOptions opt)
         plProfile(kUsageProfile, Resources::kCPU);
         plProfile(kUsageProfile, Resources::kDISK);
         plProfile(kUsageProfile, Resources::kTAPE);
+
+        break;
+    }
+    case kUsage_PledgesProfile:
+    {
+        plProfile(kUsage_PledgesProfile, Resources::kCPU);
+        plProfile(kUsage_PledgesProfile, Resources::kDISK);
+        plProfile(kUsage_PledgesProfile, Resources::kTAPE);
+
+        break;
+    }
+    case kUsage_RequiredProfile:
+    {
+        plProfile(kUsage_RequiredProfile, Resources::kCPU);
+        plProfile(kUsage_RequiredProfile, Resources::kDISK);
+        plProfile(kUsage_RequiredProfile, Resources::kTAPE);
 
         break;
     }
@@ -2019,36 +2151,15 @@ void MainWindow::selectDates(MainWindow::LoadOptions opt)
     QGridLayout *layout = new QGridLayout;
     layout->addWidget(startDate, 0, 0, 1, 1, Qt::AlignLeft);
 
-    switch (opt) {
-    case kMandO:
-    {
-        startDate->setText("Year");
-        QSpinBox *sb = new QSpinBox;
-        sb->setMaximum(QDate::currentDate().year());
-        sb->setMinimum(2014);
-        sb->setSingleStep(1);
-        mDEStart->setDate(QDate(sb->value(), 1, 1));
-        layout->addWidget(sb, 0, 1, 1, 1, Qt::AlignLeft);
-        break;
-    }
-    case kEGIUsageReport:
-    {
-        startDate->setText("StartDate");
-        QDate today = QDate::currentDate();
-        mDEStart->setDate(today.addMonths(-1));
-        mDEStart->setMaximumDate(today);
-        mDEStart->setMinimumDate(QDate(2014, 9, 1));
-        mDEStart->setCalendarPopup(true);
-        mDEEnd = new QDateEdit();
-        mDEEnd->setDate(mDEStart->date().addMonths(+1));
-        layout->addWidget(mDEStart, 0, 1, 1, 1, Qt::AlignLeft);
-    }
-        break;
-    default:
-        break;
-    }
-
-    //FIXME only start date and end date = + 1 month or today
+    startDate->setText("Start Date");
+    QDate today = QDate::currentDate();
+    mDEStart->setDate(today.addMonths(-1));
+    mDEStart->setMaximumDate(today);
+    mDEStart->setMinimumDate(QDate(2014, 9, 1));
+    mDEStart->setCalendarPopup(true);
+    mDEEnd = new QDateEdit();
+    mDEEnd->setDate(QDate(mDEStart->date().year(), mDEStart->date().month(), mDEStart->date().daysInMonth()));
+    layout->addWidget(mDEStart, 0, 1, 1, 1, Qt::AlignLeft);
 
     QPushButton *okButton = new QPushButton("OK", datesel);
 

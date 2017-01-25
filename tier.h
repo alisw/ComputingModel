@@ -27,6 +27,7 @@ public:
     void    addSEs(const QList<QString> &list);
     TierCat category() const { return mTierCategory; }
     void    clearUsed(const QString &month);
+    qint32  countWLCGAlias() const { return mWLCGAliasNames.size(); }
     bool    findCE(const QString &ce);
     bool    findSE(const QString &se);
     double  getCPU() const   { return mResources.getCPU(); }
@@ -35,23 +36,23 @@ public:
     double  getUsedCPU(const QString &month)  const  { return mUsed[month].getCPU(); }
     double  getUsedDisk(const QString &month) const  { return mUsed[month].getDisk(); }
     double  getUsedTape(const QString &month) const  { return mUsed[month].getTape(); }
-    QString getWLCGAlias() const { return mWLCGAliasName; }
+    QString getWLCGAlias(qint32 index) const { return mWLCGAliasNames.at(index); }
     QString getWLCGName() const  { return mWLCGName; }
     QString list() const;
-    void    setAlias(QString alias) { mWLCGAliasName = alias; }
+    void    addAlias(QString alias) { mWLCGAliasNames.append(alias); }
     void    setUsedCPU(QString &month, double cpu);
     double  usedCPU(const QString &m) const { return mUsed[m].getCPU(); }
     double  usedDisk(const QString &m) const { return mUsed[m].getDisk(); }
     double  usedTape(const QString &m) const { return mUsed[m].getTape(); }
 
 private:
-    QList<QString>             mMLCENames;    // The CE name in MonALIsa
-    QList<QString>             mMLSENames;    // The SE name in MonALIsa
-    Resources                  mResources;    // The resources in this site (CPU, disk, tape)
-    TierCat                    mTierCategory; // The Tier category 0, 1, or 2
-    QString                    mWLCGAliasName;// An alias name in WLCG
-    QString                    mWLCGName;     // The name in WLCG
-    QMap<QString, Resources>   mUsed;         // The resources in this site (CPU, disk, tape) per month
+    QList<QString>             mMLCENames;     // The CE name in MonALIsa
+    QList<QString>             mMLSENames;     // The SE name in MonALIsa
+    Resources                  mResources;     // The resources in this site (CPU, disk, tape)
+    TierCat                    mTierCategory;  // The Tier category 0, 1, or 2
+    QList<QString>             mWLCGAliasNames;// Aliases name in WLCG
+    QString                    mWLCGName;      // The name in WLCG
+    QMap<QString, Resources>   mUsed;          // The resources in this site (CPU, disk, tape) per month
 };
 
 #endif // TIER_H
