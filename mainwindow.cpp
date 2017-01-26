@@ -339,6 +339,13 @@ void MainWindow::validateDates(LoadOptions opt)
         loadUsageML(kMLStorageReport, dStart, dEnd);
         break;
     }
+    case kMLRAWProd:
+    {
+        QDateTime dStart(mDEStart->date());
+        QDateTime dEnd(mDEEnd->date());
+        loadUsageML(kMLRAWProd, dStart, dEnd);
+        break;
+    }
     default:
         break;
     }
@@ -606,6 +613,9 @@ void MainWindow::load(qint32 opt)
     case kMLStorageReport:
         selectDates(kMLStorageReport);
         break;
+    case kMLRAWProd:
+        selectDates(kMLRAWProd);
+        break;
     default:
         break;
     }
@@ -635,6 +645,9 @@ void MainWindow::loadUsageML(LoadOptions opt, QDateTime dateS, QDateTime dateE)
     case kMLStorageReport:
         mURL = QString("http://alimonitor.cern.ch/display?&interval.max=%1&interval.min=%2").arg(max).arg(min);
         mURL.append("&job_stats.owner=brijesh&modules=SE%2Fhist_used&page=SE%2Fhist&download_data_csv=true");
+        break;
+    case kMLRAWProd:
+        mURL = QString("https://alimonitor.cern.ch/production/raw.jsp?download_data_csv=true");
         break;
     default:
         break;
@@ -684,7 +697,6 @@ void MainWindow::loadUsageWLCG(QDate dateS, QDate dateE, Tier::TierCat cat)
                         arg(scat).arg(sYear).arg(sMonth).arg(eYear).arg(eMonth);
         break;
     case Tier::kT2:
-        //FIXME this is not the right format
         mURL = QString("https://accounting-support.egi.eu/custom_xml.php?query=normcpu&option=COUNTRY_T2&"
                        "sYear=%1&sMonth=%2&eYear=%3&eMonth=%4&yrange=FEDERATION&xrange=VO&groupVO=egi&"
                        "groupVO=egi&localJobs=onlyinfrajobs&tree=%5&optval=&csv=true").
@@ -1280,9 +1292,36 @@ void MainWindow::getDataFromWeb(const QDate &date, MainWindow::LoadOptions opt)
     w->layout()->addWidget(mDownLoadText);
     w->show();
 
+    qDebug() << Q_FUNC_INFO << mURL ;
+
     QNetworkRequest request;
-    QSslConfiguration conf = request.sslConfiguration();
-    conf.setPeerVerifyMode(QSslSocket::VerifyNone);
+
+    QSslConfiguration conf;
+
+    if (opt == kMLRAWProd) {
+        QNetworkProxyFactory::setUseSystemConfiguration(true);
+
+           QFile privateKeyFile("/Users/schutz/cert/userkey.pem");
+           privateKeyFile.open(QIODevice::ReadOnly);
+
+           QFile certificateFile("/Users/schutz/cert/cern.crt");
+           certificateFile.open(QIODevice::ReadOnly);
+
+           QSslKey privateKey(&privateKeyFile, QSsl::Opaque);
+           QSslCertificate certificate(&certificateFile);
+
+           qWarning() << QSslSocket::supportsSsl();
+           qWarning() << certificate.serialNumber();
+           qWarning() << certificate.subjectInfo(QSslCertificate::CommonName);
+           qWarning() << certificate.expiryDate();
+
+           conf.setPrivateKey(privateKey);
+           conf.setLocalCertificate(certificate);
+    } else {
+        conf = request.sslConfiguration();
+        conf.setPeerVerifyMode(QSslSocket::VerifyNone);
+    }
+
     request.setSslConfiguration(conf);
     request.setUrl(mURL);
 
@@ -1294,6 +1333,7 @@ void MainWindow::getDataFromWeb(const QDate &date, MainWindow::LoadOptions opt)
     connect(reply, SIGNAL(downloadProgress(qint64,qint64)), this, SLOT(transferProgress(qint64,qint64)));
     connect(reply, SIGNAL(error(QNetworkReply::NetworkError)), this, SLOT(showNetworkError(QNetworkReply::NetworkError)));
     connect(reply, &QNetworkReply::finished, this, [date, opt, this]{ saveUrlFile(date, opt); });
+
 }
 
 //===========================================================================
@@ -1677,6 +1717,7 @@ void MainWindow::printCurrentWindow() const
     mb->show();
 }
 
+//===========================================================================
 void MainWindow::saveUrlFile(const QDate &date, MainWindow::LoadOptions opt)
 {
     // save the url as a file
