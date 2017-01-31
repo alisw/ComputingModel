@@ -259,7 +259,7 @@ void MainWindow::validateDates(PlotOptions opt)
 {
     //sets start and end date and launches data collection from url
     //FIXME: widget does not close
-    qobject_cast<QWidget*>(sender()->parent())->close();
+    qobject_cast<QWidget*>(sender())->close();
     //FIXME: widget does not close
 
     QDate dStart = mDEStart->date();
@@ -1212,18 +1212,19 @@ void MainWindow:: getDataFromWeb(PlotOptions opt)
 {
     // plot the registered data profile
 
-    QWidget *w = new QWidget();
-    w->setAttribute(Qt::WA_DeleteOnClose);
-    w->setLayout(new QVBoxLayout);
+//    QWidget *w = new QWidget();
+//    w->setAttribute(Qt::WA_DeleteOnClose);
+//    w->setLayout(new QVBoxLayout);
 
-    mProgressBar = new QProgressBar(w);
-    w->layout()->addWidget(mProgressBar);
+//    mProgressBar = new QProgressBar(w);
+//    w->layout()->addWidget(mProgressBar);
 
-    mDownLoadText = new QLabel;
-    mDownLoadText->setText(QString("Downloading from %1").arg(mURL));
-    mDownLoadText->setAlignment(Qt::AlignHCenter);
-    w->layout()->addWidget(mDownLoadText);
-    w->show();
+//    mDownLoadText = new QLabel;
+//    mDownLoadText->setText(QString("Downloading from %1").arg(mURL));
+//    mDownLoadText->setAlignment(Qt::AlignHCenter);
+//    w->layout()->addWidget(mDownLoadText);
+//    w->show();
+
 
     QNetworkRequest request;
     QSslConfiguration conf = request.sslConfiguration();
@@ -1894,7 +1895,7 @@ void MainWindow::plProfileEventSize()
     QValueAxis *axisY = new QValueAxis;
     axisY->setTickCount(9);
     axisY->setLabelFormat("%i");
-    axisY->setTitleText("Efficiency (%)");
+    axisY->setTitleText("Event Size (kB)");
     chart->addAxis(axisY, Qt::AlignLeft);
 
     QLineSeries *series = new QLineSeries;
