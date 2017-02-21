@@ -54,10 +54,11 @@ MainWindow::MainWindow(QWidget *parent)
     // ctor
 
     mDebug = false;
-    mDownLoadText   = Q_NULLPTR;
-    mNetworkManager = Q_NULLPTR;
-    mProgressBar    = Q_NULLPTR;
-    mTableConsol    = Q_NULLPTR;
+    mDownLoadText      = Q_NULLPTR;
+    mNetworkManager    = Q_NULLPTR;
+    mProgressBar       = Q_NULLPTR;
+    mProgressBarWidget = Q_NULLPTR;
+    mTableConsol       = Q_NULLPTR;
     mURL            = "";
     setGeometry(0,0, 50, 25);
 
@@ -183,6 +184,9 @@ void MainWindow::parsePlotUrlFile(PlotOptions opt)
 
     mDownLoadText->setText("DONE");
 
+    mProgressBarWidget->close();
+
+
     QTextStream stream(&data);
     QString line;
 
@@ -258,9 +262,7 @@ void MainWindow::transferProgress(qint64 readBytes, qint64 totalBytes)
 void MainWindow::validateDates(PlotOptions opt)
 {
     //sets start and end date and launches data collection from url
-    //FIXME: widget does not close
-    qobject_cast<QWidget*>(sender())->close();
-    //FIXME: widget does not close
+    qobject_cast<QWidget*>(sender()->parent())->close();
 
     QDate dStart = mDEStart->date();
     QDate dEnd   = mDEEnd->date();
@@ -306,9 +308,7 @@ void MainWindow::validateDates(LoadOptions opt)
 {
     //sets start and end date and launches data collection from url
 
-    //FIXME: widget does not close
     qobject_cast<QWidget*>(sender()->parent())->close();
-    //FIXME: widget does not close
 
     switch (opt) {
     case kEGICPUReportT1:
@@ -1212,18 +1212,18 @@ void MainWindow:: getDataFromWeb(PlotOptions opt)
 {
     // plot the registered data profile
 
-//    QWidget *w = new QWidget();
-//    w->setAttribute(Qt::WA_DeleteOnClose);
-//    w->setLayout(new QVBoxLayout);
+    mProgressBarWidget = new QWidget();
+    mProgressBarWidget->setAttribute(Qt::WA_DeleteOnClose);
+    mProgressBarWidget->setLayout(new QVBoxLayout);
 
-//    mProgressBar = new QProgressBar(w);
-//    w->layout()->addWidget(mProgressBar);
+    mProgressBar = new QProgressBar(mProgressBarWidget);
+    mProgressBarWidget->layout()->addWidget(mProgressBar);
 
-//    mDownLoadText = new QLabel;
-//    mDownLoadText->setText(QString("Downloading from %1").arg(mURL));
-//    mDownLoadText->setAlignment(Qt::AlignHCenter);
-//    w->layout()->addWidget(mDownLoadText);
-//    w->show();
+    mDownLoadText = new QLabel(mProgressBarWidget);
+    mDownLoadText->setText(QString("Downloading from %1").arg(mURL));
+    mDownLoadText->setAlignment(Qt::AlignHCenter);
+    mProgressBarWidget->layout()->addWidget(mDownLoadText);
+    mProgressBarWidget->show();
 
 
     QNetworkRequest request;
@@ -1246,18 +1246,18 @@ void MainWindow:: getDataFromWeb(PlotOptions opt)
 void MainWindow::getDataFromWeb(const QDate &date, Tier::TierCat cat)
 {
     // connect to the mURL and continue with saveURLFile when connection established
-    QWidget *w = new QWidget();
-    w->setAttribute(Qt::WA_DeleteOnClose);
-    w->setLayout(new QVBoxLayout);
+    mProgressBarWidget = new QWidget();
+    mProgressBarWidget->setAttribute(Qt::WA_DeleteOnClose);
+    mProgressBarWidget->setLayout(new QVBoxLayout);
 
-    mProgressBar = new QProgressBar(w);
-    w->layout()->addWidget(mProgressBar);
+    mProgressBar = new QProgressBar(mProgressBarWidget);
+    mProgressBarWidget->layout()->addWidget(mProgressBar);
 
-    mDownLoadText = new QLabel;
+    mDownLoadText = new QLabel(mProgressBarWidget);
     mDownLoadText->setText(QString("Downloading from %1").arg(mURL));
     mDownLoadText->setAlignment(Qt::AlignHCenter);
-    w->layout()->addWidget(mDownLoadText);
-    w->show();
+    mProgressBarWidget->layout()->addWidget(mDownLoadText);
+    mProgressBarWidget->show();
 
     QNetworkRequest request;
     QSslConfiguration conf = request.sslConfiguration();
@@ -1280,20 +1280,18 @@ void MainWindow::getDataFromWeb(const QDate &date, MainWindow::LoadOptions opt)
 {
     // connect to the mURL and continue with saveURLFile when connection established
 
-    QWidget *w = new QWidget();
-    w->setAttribute(Qt::WA_DeleteOnClose);
-    w->setLayout(new QVBoxLayout);
+    mProgressBarWidget = new QWidget();
+    mProgressBarWidget->setAttribute(Qt::WA_DeleteOnClose);
+    mProgressBarWidget->setLayout(new QVBoxLayout);
 
-    mProgressBar = new QProgressBar(w);
-    w->layout()->addWidget(mProgressBar);
+    mProgressBar = new QProgressBar(mProgressBarWidget);
+    mProgressBarWidget->layout()->addWidget(mProgressBar);
 
-    mDownLoadText = new QLabel;
+    mDownLoadText = new QLabel(mProgressBarWidget);
     mDownLoadText->setText(QString("Downloading from %1").arg(mURL));
     mDownLoadText->setAlignment(Qt::AlignHCenter);
-    w->layout()->addWidget(mDownLoadText);
-    w->show();
-
-    qDebug() << Q_FUNC_INFO << mURL ;
+    mProgressBarWidget->layout()->addWidget(mDownLoadText);
+    mProgressBarWidget->show();
 
     QNetworkRequest request;
 
@@ -1750,6 +1748,7 @@ void MainWindow::saveUrlFile(const QDate &date, MainWindow::LoadOptions opt)
         }
         file.close();
     }
+    mProgressBarWidget->close();
 }
 
 //===========================================================================
@@ -1784,6 +1783,7 @@ void MainWindow::saveUrlFile(const QDate &date, Tier::TierCat cat)
         }
         file.close();
     }
+    mProgressBarWidget->close();
 }
 
 //===========================================================================

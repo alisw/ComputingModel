@@ -870,9 +870,9 @@ bool ALICE::readMonthlyReport(const QDate &date)
         QString site = strList.at(0);
         if (site == "Total")
             break;
-        if (strList.at(aliceColumn) != "" && strList.at(aliceColumn) != " 0") {
-            QString scpu  = strList.at(aliceColumn);
-            double cpu = scpu.toDouble();
+        QString scpu  = strList.at(aliceColumn);
+        double cpu = scpu.toDouble();
+        if (cpu != 0) {
             Tier* tier = searchTier(site);
             if (!tier) {
                 qWarning() << Q_FUNC_INFO << site << " not found!";
@@ -1036,12 +1036,15 @@ bool ALICE::readMonthlyReport(const QDate &date)
         for (qint32 column = 0; column < valuesList.size(); column++) {
             QString key = listSE.at(column);
             key.remove("\n");
-            QString value = valuesList.at(column);
-            diskUsage[key] += value.toDouble();
+            QString svalue = valuesList.at(column);
+            double value = svalue.toDouble();
+            if ( value > diskUsage[key])
+                diskUsage[key] = value;
         }
         linecount++;
     }
     csvFile.close();
+
 
     double tapeUSumT0 = 0.0;
     double tapeUSumT1 = 0.0;
@@ -1052,7 +1055,6 @@ bool ALICE::readMonthlyReport(const QDate &date)
     QHashIterator<QString, double> stoit(diskUsage);
     while (stoit.hasNext()) {
         stoit.next();
-        diskUsage[stoit.key()] = stoit.value() / linecount / 1000000; //units = PB
         FundingAgency *fa = searchSE(stoit.key());
 
         if (!fa) {
@@ -1061,11 +1063,12 @@ bool ALICE::readMonthlyReport(const QDate &date)
         }
 
         QString se = stoit.key();
-        double storage = diskUsage[se];
+        double storage = diskUsage[se] / 1000000;
+
 
         Resources::Resources_type diskOrTape = fa->addUsedDiskTape(month, se, storage);
         if (diskOrTape == Resources::kTAPE) {
-            if (se.contains("CERN"))
+            if (se.contains("CERN::T0ALICE"))
                 tapeUSumT0 += storage;
             else
                 tapeUSumT1 += storage;

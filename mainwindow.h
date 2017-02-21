@@ -120,6 +120,7 @@ private:
     QList<QAction*>         mPlAct;              // Triggers plots
 //    QMenu                   *mPlMenu;            // Menu for plotting
     QProgressBar            *mProgressBar;       // A progress bar used when downloading files from www
+    QWidget                 *mProgressBarWidget; // The progress bar widget used when downloading files from www
     QList<QMenu*>           mReportsMenus;       // Menus for reading reports/year
 //    QList<QAction*>         mRequiredResources;  // Triggers reading required ressources
     QTableView              *mTableConsol;       // The table where the all stuff table is displayed
