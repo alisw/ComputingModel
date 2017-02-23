@@ -16,7 +16,7 @@
 #include "resources.h"
 #include "tier.h"
 
-
+class QNetworkAccessManager;
 class ALICE : public QObject
 {
     Q_OBJECT
@@ -42,6 +42,7 @@ public:
     void                 drawTable();
     QStandardItemModel   *getModel() { return mModel; }
     double               getPledged(Tier::TierCat tier, Resources::Resources_type restype, const QString &year);
+    QByteArray           getReportFromWeb(QString fileName);
     double               getRequired(Tier::TierCat tier, Resources::Resources_type restype, const QString &year);
     double               getUsed(Tier::TierCat tier, Resources::Resources_type restype, const QDate date);
     void                 initTableViewModel();
@@ -78,6 +79,7 @@ private:
     QString               mCurrentPledgedYear;     // the current year for the pledges
     QString               mCurrentRequirementYear; // the current year for the requirements
     QDate                 mCurrentUsedDate;        // the current date for the requirements
+    QNetworkAccessManager *mNetworkManager;        // The network manager
     Resources             mT0Required;             // The resources required at T0 in a given year
     Resources             mT1Required;             // The resources required at T1 in a given year
     Resources             mT2Required;             // The resources required at T2 in a given year

@@ -40,7 +40,7 @@ class MainWindow : public QMainWindow
 public:
     enum PlotOptions {kMandOProfile, kRequirementsProfile, kPledgesProfile, kRegisteredDataProfile, kUsageProfile, kUsage_PledgesProfile, kUsage_RequiredProfile, kTierEfficiencyProfile, kUserEfficiencyProfile,
                       kEventSizeProfile};
-    enum LoadOptions {kEGICPUReportT1, kEGICPUReportT2, kMLCPUReport, kMLStorageReport, kMLRAWProd};
+    enum LoadOptions {kEGICPUReportT1, kEGICPUReportT2, kMLCPUReport, kMLStorageReport, kMLRAWProd, kTest};
 
     Q_ENUM (PlotOptions)
     Q_ENUM (LoadOptions)
@@ -95,6 +95,8 @@ private:
     void        saveData(PlotOptions opt);
     void        selectDates(PlotOptions opt);
     void        selectDates(LoadOptions opt);
+
+    void        test();
 
 
 

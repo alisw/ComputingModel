@@ -616,6 +616,9 @@ void MainWindow::load(qint32 opt)
     case kMLRAWProd:
         selectDates(kMLRAWProd);
         break;
+    case kTest:
+        test();
+        break;
     default:
         break;
     }
@@ -735,7 +738,7 @@ void MainWindow::plot(qint32 opt)
         plProfile(kUsage_PledgesProfile);
         break;
     case kUsage_RequiredProfile:
-        plProfile(kUsage_PledgesProfile);
+        plProfile(kUsage_RequiredProfile);
         break;
     case kTierEfficiencyProfile:
         selectDates(kTierEfficiencyProfile);
@@ -2211,4 +2214,56 @@ void MainWindow::selectDates(MainWindow::LoadOptions opt)
     layout->addWidget(okButton, 2, 0, 1, 2, Qt::AlignHCenter);
     datesel->setLayout(layout);
     datesel->show();
+}
+
+//===========================================================================
+void MainWindow::test()
+{
+    // test reading accounting data from the web
+
+    QNetworkRequest request;
+    QSslConfiguration conf = request.sslConfiguration();
+    conf.setPeerVerifyMode(QSslSocket::VerifyNone);
+    request.setSslConfiguration(conf);
+    mURL = "http://alicecrm.web.cern.ch/data/2016/12/TIER1_TIER1_sum_normcpu_TIER1_VO.csv";
+    request.setUrl(mURL);
+
+    if (!mNetworkManager)
+        mNetworkManager = new QNetworkAccessManager(this);
+    QNetworkReply *reply = mNetworkManager->get(request);
+
+    mProgressBarWidget = new QWidget();
+    mProgressBarWidget->setAttribute(Qt::WA_DeleteOnClose);
+    mProgressBarWidget->setLayout(new QVBoxLayout);
+
+    mProgressBar = new QProgressBar(mProgressBarWidget);
+    mProgressBarWidget->layout()->addWidget(mProgressBar);
+
+    mDownLoadText = new QLabel(mProgressBarWidget);
+    mDownLoadText->setText(QString("Downloading from %1").arg(mURL));
+    mDownLoadText->setAlignment(Qt::AlignHCenter);
+    mProgressBarWidget->layout()->addWidget(mDownLoadText);
+    mProgressBarWidget->show();
+
+    connect(reply, SIGNAL(downloadProgress(qint64,qint64)), this, SLOT(transferProgress(qint64,qint64)));
+    connect(reply, SIGNAL(error(QNetworkReply::NetworkError)), this, SLOT(showNetworkError(QNetworkReply::NetworkError)));
+
+    QEventLoop loop;
+    connect(reply, SIGNAL(finished()), &loop, SLOT(quit()));
+    qDebug() << Q_FUNC_INFO;
+    loop.exec();
+
+    QByteArray data = reply->readAll();
+
+    mProgressBarWidget->close();
+
+    QTextStream stream(&data);
+    qDebug() << Q_FUNC_INFO << stream.readLine();
+    qDebug() << Q_FUNC_INFO << stream.readLine();
+    qDebug() << Q_FUNC_INFO << stream.readLine();
+    qDebug() << Q_FUNC_INFO << stream.readLine();
+    qDebug() << Q_FUNC_INFO << stream.readLine();
+    qDebug() << Q_FUNC_INFO << stream.readLine();
+    qDebug() << Q_FUNC_INFO << stream.readLine();
+    qDebug() << Q_FUNC_INFO << stream.readLine();
 }

@@ -5,6 +5,7 @@
 #include <QDir>
 #include <QErrorMessage>
 #include <QFile>
+#include <QNetworkAccessManager>
 #include <QStandardItemModel>
 #include <QStandardPaths>
 #include <QTableView>
@@ -336,6 +337,26 @@ double ALICE::getPledged(Tier::TierCat tier, Resources::Resources_type restype, 
     }
 
     return rv;
+}
+
+//===========================================================================
+QByteArray ALICE::getReportFromWeb(QString fileName)
+{
+    QNetworkRequest request;
+    QSslConfiguration conf = request.sslConfiguration();
+    conf.setPeerVerifyMode(QSslSocket::VerifyNone);
+    request.setSslConfiguration(conf);
+    QString url = fileName.prepend("http://alicecrm.web.cern.ch");
+    request.setUrl(url);
+    if (!mNetworkManager)
+        mNetworkManager = new QNetworkAccessManager(this);
+    QNetworkReply *reply = mNetworkManager->get(request);
+    QEventLoop loop;
+    connect(reply, SIGNAL(finished()), &loop, SLOT(quit()));
+    loop.exec();
+
+    return reply->readAll();
+
 }
 
 //===========================================================================
@@ -838,18 +859,23 @@ bool ALICE::readMonthlyReport(const QDate &date)
     // line 5: header TIER1,"alice","atlas","cms","lhcb",Total
     // last line      Total, xxxxx (HEPSPEC06-hours)
 
-    QString fileName = QString(":/data/%1/%2/TIER1_TIER1_sum_normcpu_TIER1_VO.csv").arg(date.year()).arg(date.month());
-    QFile  csvFile(fileName);
-    if(!csvFile.open(QIODevice::ReadOnly))
+//    QString fileName = QString(":/data/%1/%2/TIER1_TIER1_sum_normcpu_TIER1_VO.csv").arg(date.year()).arg(date.month());
+    QString fileName = QString("/data/%1/%2/TIER1_TIER1_sum_normcpu_TIER1_VO.csv").arg(date.year()).arg(date.month());
+//    QFile  csvFile(fileName);
+    QByteArray data = getReportFromWeb(fileName);
+    if (data.isEmpty())
+    //    if(!csvFile.open(QIODevice::ReadOnly))
         return false;
+    QTextStream csvFile1(&data);
+
     // read header 4 lines for data collected before December 2016
     if (date < QDate(2016, 12, 1)) {
-        csvFile.readLine();
-        csvFile.readLine();
-        csvFile.readLine();
-        csvFile.readLine();
+        csvFile1.readLine();
+        csvFile1.readLine();
+        csvFile1.readLine();
+        csvFile1.readLine();
     }
-    QString line = csvFile.readLine();
+    QString line = csvFile1.readLine();
     QStringList strList = line.split(',');
     qint32 aliceColumn = -1;
     qint32 index = 0;
@@ -864,8 +890,8 @@ bool ALICE::readMonthlyReport(const QDate &date)
     double cpuUSumT0 = 0.0;
     double cpuUSumT1 = 0.0;
 
-    while(!csvFile.atEnd()) {
-        line = csvFile.readLine();
+    while(!csvFile1.atEnd()) {
+        line = csvFile1.readLine();
         strList = line.split(',');
         QString site = strList.at(0);
         if (site == "Total")
@@ -888,7 +914,8 @@ bool ALICE::readMonthlyReport(const QDate &date)
                 cpuUSumT1 += rcpu;
         }
     }
-    csvFile.close();
+//    csvFile.close();
+
     mT0Used.setCPU(cpuUSumT0, Resources::kHEPSPEC06);
     mT1Used.setCPU(cpuUSumT1, Resources::kHEPSPEC06);
 
@@ -897,19 +924,22 @@ bool ALICE::readMonthlyReport(const QDate &date)
     // line 1-4: header to be skipped only before 1/12/2016
     // line 5: COUNTRY,FEDERATION,2016 CPU Pledge (HEPSPEC06),pledge inc. efficiency (HEPSPEC06-Hrs),SITE,alice,atlas,cms,lhcb,Total,delivered as % of pledge
     fileName = QString(":/data/%1/%2/reptier2.csv").arg(date.year()).arg(date.month());
-    csvFile.setFileName(fileName);
-    if(!csvFile.open(QIODevice::ReadOnly))
+//    csvFile.setFileName(fileName);
+    data = getReportFromWeb(fileName);
+//     if(!csvFile.open(QIODevice::ReadOnly))
+    if (data.isEmpty())
         return false;
-    // read header 4 lines before 1/12/2016
+    QTextStream csvFile2(&data);
+   // read header 4 lines before 1/12/2016
     qint32 federationIndex = 0;
     if (date < QDate(2016, 12, 1)) {
-        csvFile.readLine();
-        csvFile.readLine();
-        csvFile.readLine();
-        csvFile.readLine();
+        csvFile2.readLine();
+        csvFile2.readLine();
+        csvFile2.readLine();
+        csvFile2.readLine();
         federationIndex = 1;
     }
-    line = csvFile.readLine();
+    line = csvFile2.readLine();
     strList = line.split(',');
     aliceColumn = -1;
     index = 0;
@@ -923,8 +953,8 @@ bool ALICE::readMonthlyReport(const QDate &date)
 
     double cpuUSumT2 = 0.0;
 
-    while(!csvFile.atEnd()) {
-        line = csvFile.readLine();
+    while(!csvFile2.atEnd()) {
+        line = csvFile2.readLine();
         strList = line.split(',');
         QString country = strList.at(0);
         if (date >= QDate(2016, 12, 1)) {
@@ -956,7 +986,7 @@ bool ALICE::readMonthlyReport(const QDate &date)
             cpuUSumT2 += rcpu;
         }
     }
-    csvFile.close();
+//    csvFile.close();
     mT2Used.setCPU(cpuUSumT2, Resources::kHEPSPEC06);
     mToUsed.setCPU(cpuUSumT0 + cpuUSumT1 + cpuUSumT2, Resources::kHEPSPEC06);
 
@@ -975,16 +1005,19 @@ bool ALICE::readMonthlyReport(const QDate &date)
     // take the average over time
 
     fileName = QString(":/data/%1/%2/CPU_Usage.csv").arg(date.year()).arg(date.month());
-    csvFile.setFileName(fileName);
-    if(!csvFile.open(QIODevice::ReadOnly))
+    data = getReportFromWeb(fileName);
+//    csvFile.setFileName(fileName);
+//    if(!csvFile.open(QIODevice::ReadOnly))
+    if (data.isEmpty())
         return false;
-    line = csvFile.readLine();
+    QTextStream csvFile3(&data);
+    line = csvFile3.readLine();
     QStringList listCE = line.split(',');
     listCE.removeAt(0); // removes the Time column
     QHash<QString, double> cpuUsage;
     qint32 linecount = 0;
-    while (!csvFile.atEnd()) {
-        QString line = csvFile.readLine();
+    while (!csvFile3.atEnd()) {
+        QString line = csvFile3.readLine();
         QStringList valuesList = line.split(',');
         valuesList.removeAt(0);
         for (qint32 column = 0; column < valuesList.size(); column++) {
@@ -995,7 +1028,7 @@ bool ALICE::readMonthlyReport(const QDate &date)
         }
         linecount++;
     }
-    csvFile.close();
+//    csvFile.close();
     QHashIterator<QString, double> cpuit(cpuUsage);
     while (cpuit.hasNext()) {
         cpuit.next();
@@ -1021,16 +1054,19 @@ bool ALICE::readMonthlyReport(const QDate &date)
 
 
     fileName = QString(":/data/%1/%2/Disk_Tape_Usage.csv").arg(date.year()).arg(date.month());
-    csvFile.setFileName(fileName);
-    if(!csvFile.open(QIODevice::ReadOnly))
+//    csvFile.setFileName(fileName);
+    data = getReportFromWeb(fileName);
+//    if(!csvFile.open(QIODevice::ReadOnly))
+    if (data.isEmpty())
         return false;
-    line = csvFile.readLine();
+    QTextStream csvFile4(&data);
+    line = csvFile4.readLine();
     QStringList listSE = line.split(',');
     listSE.removeAt(0); // removes the Time column
     QHash<QString, double> diskUsage;
     linecount = 0;
-    while (!csvFile.atEnd()) {
-        QString line = csvFile.readLine();
+    while (!csvFile4.atEnd()) {
+        QString line = csvFile4.readLine();
         QStringList valuesList = line.split(',');
         valuesList.removeAt(0);
         for (qint32 column = 0; column < valuesList.size(); column++) {
@@ -1043,8 +1079,7 @@ bool ALICE::readMonthlyReport(const QDate &date)
         }
         linecount++;
     }
-    csvFile.close();
-
+//    csvFile.close();
 
     double tapeUSumT0 = 0.0;
     double tapeUSumT1 = 0.0;
@@ -1070,7 +1105,7 @@ bool ALICE::readMonthlyReport(const QDate &date)
         if (diskOrTape == Resources::kTAPE) {
             if (se.contains("CERN::T0ALICE"))
                 tapeUSumT0 += storage;
-            else
+            else if (!se.contains("ALICE::CERN::CASTOR2"))
                 tapeUSumT1 += storage;
         } else if (diskOrTape == Resources::kDISK) {
             if (se.contains("CERN"))
