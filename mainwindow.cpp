@@ -394,7 +394,7 @@ void MainWindow::validateDates(PlotOptions opt)
         plBarchart(Resources::kCPU);
         plBarchart(Resources::kDISK);
         plBarchart(Resources::kTAPE);
-        break;
+      break;
     }
     default:
         break;
@@ -805,24 +805,49 @@ void MainWindow::plBarchart(Resources::Resources_type type)
 
     QVector<double> *dataVec = new QVector<double>(columns - 2);
     QStringList categories;
+    QDate date = mDEStart->date();
     for (int year = mDEStart->date().year(); year <= mDEEnd->date().year(); year++) {
         categories.append(QString::number(year));
         dataVec->replace(colPledged - 2, ALICE::instance().getPledged(Tier::kTOTS, type, QString::number(year)));
         dataVec->replace(colRequired - 2, ALICE::instance().getRequired(Tier::kTOTS, type, QString::number(year)));
-        QDate date = mDEStart->date();
         double used = 0.;
+        double value = 0.0;
+        int    weight = 1;
         int months = date.daysTo(mDEEnd->date()) / 30;
-        while (date <= mDEEnd->date()) {
+        while (date <= QDate(year, 12, 21) && date <= mDEEnd->date()) {
             transferProgress(progressCount++, months);
-            double value = ALICE::instance().getUsed(Tier::kTOTS, type, date);
-            if (used < value)
-                used = value;
+             value = ALICE::instance().getUsed(Tier::kT0,   type, date) +
+                     ALICE::instance().getUsed(Tier::kT1,   type, date) +
+                     ALICE::instance().getUsed(Tier::kT2,   type, date);
+            switch (type) {
+            case Resources::kCPU:
+            {
+                used += value;
+                weight++;
+                break;
+            }
+            case Resources::kDISK:
+            {
+                if (used < value)
+                    used = value;
+                break;
+            }
+            case Resources::kTAPE:
+            {
+                if (used < value)
+                    used = value;
+                break;
+            }
+            default:
+                break;
+            }
+
             date = date.addMonths(1);
-            qDebug() << Q_FUNC_INFO << value << used;
         }
-        dataVec->replace(colUsed - 2, used);
+        dataVec->replace(colUsed - 2, used/weight);
         model->addData(QString::number(year), dataVec);
     }
+
     setProgressBar(false);
 
     QTableView *tableView = new QTableView;
@@ -838,7 +863,20 @@ void MainWindow::plBarchart(Resources::Resources_type type)
     QString swhat = me.key(type);
     swhat.remove(0, 1);
 
-    QString title(QString("ALICE Pledged/Required/Used %1").arg(swhat));
+    QString title;
+    switch (type) {
+    case Resources::kCPU:
+        title = QString("ALICE Pledged/Required/Used %1 (kHEPSpec06)").arg(swhat);
+        break;
+    case Resources::kDISK:
+        title = QString("ALICE Pledged/Required/Used %1 (PB)").arg(swhat);
+        break;
+    case Resources::kTAPE:
+        title = QString("ALICE Pledged/Required/Used %1 (PB)").arg(swhat);
+        break;
+     default:
+        break;
+    }
 
     chart->setTitle(title);
 
@@ -1535,7 +1573,7 @@ void MainWindow::getDataFromFile(PlotOptions opt)
 }
 
 //===========================================================================
-void MainWindow::plProfile(PlotOptions opt, Resources::Resources_type type)
+void MainWindow::   plProfile(PlotOptions opt, Resources::Resources_type type)
 {
     // plot requirements CPU, Disk and tape as a function of year
 
@@ -1603,6 +1641,7 @@ void MainWindow::plProfile(PlotOptions opt, Resources::Resources_type type)
                 value1 = ALICE::instance().getUsed(Tier::kT1,   type, date);
                 value2 = ALICE::instance().getUsed(Tier::kT2,   type, date);
                 valueo = ALICE::instance().getUsed(Tier::kTOTS, type, date);
+                qDebug() << Q_FUNC_INFO << type << date.year() << valueo;
             } else if (opt == kUsage_PledgesProfile){
                 value0 = 100 * ALICE::instance().getUsed(Tier::kT0,   type, date) / ALICE::instance().getPledged(Tier::kT0,   type, QString::number(date.year()));
                 value1 = 100 * ALICE::instance().getUsed(Tier::kT1,   type, date) / ALICE::instance().getPledged(Tier::kT1,   type, QString::number(date.year()));
