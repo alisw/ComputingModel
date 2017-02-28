@@ -50,3 +50,5 @@ HEADERS  += mainwindow.h \
 RESOURCES += \
     images.qrc \
     data/data.qrc
+
+DISTFILES +=

@@ -38,10 +38,12 @@ class MainWindow : public QMainWindow
     Q_OBJECT
 
 public:
+    enum ActionOptions {kTheBigTable, kGetReport};
     enum PlotOptions {kMandOProfile, kRequirementsProfile, kPledgesProfile, kRegisteredDataProfile, kUsageProfile, kUsage_PledgesProfile, kUsage_RequiredProfile, kTierEfficiencyProfile, kUserEfficiencyProfile,
                       kEventSizeProfile};
-    enum LoadOptions {kEGICPUReportT1, kEGICPUReportT2, kMLCPUReport, kMLStorageReport, kMLRAWProd, kTest};
+    enum LoadOptions {kEGICPUReportT1, kEGICPUReportT2, kMLCPUReport, kMLStorageReport, kMLRAWProd};
 
+    Q_ENUM (ActionOptions)
     Q_ENUM (PlotOptions)
     Q_ENUM (LoadOptions)
 
@@ -56,6 +58,7 @@ protected:
     void paintEvent(QPaintEvent *);
 
 private slots:
+    void        doit(qint32 opt);
     void        findAName();
     void        load(qint32 opt);
     void        mousePressEvent(QMouseEvent *event);
@@ -68,8 +71,9 @@ private slots:
     void        saveUrlFile(const QDate &date, Tier::TierCat cat);
     void        showNetworkError(QNetworkReply::NetworkError er);
     void        transferProgress(qint64 readBytes, qint64 totalBytes);
-    void        validateDates(MainWindow::PlotOptions opt);
-    void        validateDates(MainWindow::LoadOptions opt);
+    void        validateDate(ActionOptions opt);
+    void        validateDates(PlotOptions opt);
+    void        validateDates(LoadOptions opt);
 
 private:
     void        createActions();
@@ -77,10 +81,10 @@ private:
     static void customMessageHandler(QtMsgType type, const QMessageLogContext &context, const QString &msg);
     void        setDebugMode(bool val);
     void        doeReqAndPle(const QString &year);
-    void        getDataFromWeb(MainWindow::PlotOptions opt);
+    void        getDataFromWeb(PlotOptions opt);
     void        getDataFromWeb(const QDate &date, Tier::TierCat cat);
     void        getDataFromWeb(const QDate &date, LoadOptions opt);
-    void        getDataFromFile(MainWindow::PlotOptions opt);
+    void        getDataFromFile(PlotOptions opt);
     void        keyPressEvent(QKeyEvent *event);
     void        loadUsageML(LoadOptions opt, QDateTime dateS, QDateTime dateE);
     void        loadUsageWLCG(QDate dateS, QDate dateE, Tier::TierCat cat);
@@ -93,24 +97,20 @@ private:
     void        plUserEfficiency(PlotOptions opt);
     void        readMonthlyReport(QDate date);
     void        saveData(PlotOptions opt);
-    void        selectDates(PlotOptions opt);
+    void        selectDate(ActionOptions opt);
+    void        selectDates(PlotOptions opt, QDate dateMax = QDate::currentDate());
     void        selectDates(LoadOptions opt);
+    void        setProgressBar(bool on = true);
 
-    void        test();
-
-
-
-//    QMenu                   *mActionsMenu;       // Menu Tab with various actions
     static bool             mDebug;              // True for running debug mode
     QAction                 *mDebugOffAction;    // Action for debug mode off
     QAction                 *mDebugOnAction;     // Action for debug mode on
     QMenu                   *mDebugMenu;         // Menu Tab to set the debug on/off
-    QList<QAction*>         mDoReqPle;           // Triggers doing the final table of requirements and pledges
+//    QList<QAction*>         mDoReqPle;           // Triggers doing the final table of requirements and pledges
     QLabel                  *mDownLoadText;      // The text associated with the download status window + mProgressBar
     QDateEdit               *mDEEnd;             // End date for the data to be plotted or loaded
     QDateEdit               *mDEStart;           // Start date for the data to be plotted or loaded
-//    QList<QAction*>         mGlanceData;         // Triggers Glance data reading
-    QAction                 *mListAction;        // Action to list various stuff
+    QList<QAction*>         mLiAct;              // List of Actionsto do various stuff
     QList<QAction*>         mLoAct;              // Triggers loads
     ConsoleWidget           *mLogConsol;         // The console where to write logging info
     QMdiSubWindow           *mLogConsolView;     // The view of the log consol in the mdi area
@@ -118,13 +118,10 @@ private:
     QNetworkAccessManager   *mNetworkManager;    // The network manager
     QList<QVector<double>*> mPlData;             // Data to be plotted
     QList<QString>          mPlDataName;         // Name of the data to be plotted
-//    QList<QAction*>         mPledgedResources;   // Triggers reading pledged ressources
     QList<QAction*>         mPlAct;              // Triggers plots
-//    QMenu                   *mPlMenu;            // Menu for plotting
     QProgressBar            *mProgressBar;       // A progress bar used when downloading files from www
     QWidget                 *mProgressBarWidget; // The progress bar widget used when downloading files from www
     QList<QMenu*>           mReportsMenus;       // Menus for reading reports/year
-//    QList<QAction*>         mRequiredResources;  // Triggers reading required ressources
     QTableView              *mTableConsol;       // The table where the all stuff table is displayed
     QMdiSubWindow           *mTableConsolView;   // The view of the previous table
     QString                 mURL;                // URL name where to get data from

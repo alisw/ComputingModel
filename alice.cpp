@@ -464,12 +464,12 @@ bool ALICE::readRebus(const QString &year)
     mT2Pledged.setObjectName(QString("Pledged Resources at T2 in %1").arg(year));
     mToPledged.setObjectName(QString("Pledged Resources in total in %1").arg(year));
 
-    QString filename = QString(":/data/%1/pledges.csv").arg(year);
-    QFile csvFile(filename);
-    if (!csvFile.open(QIODevice::ReadOnly)) {
-        qWarning() << "file" << filename << "not found";
+    QString fileName = QString("/data/%1/pledges.csv").arg(year);
+    QByteArray data = getReportFromWeb(fileName);
+    if (data.isEmpty())
         return false;
-    }
+    QTextStream csvFile(&data);
+
     // read the header row and find the column of ALICE V0
     qint32 aliceColumn = -1;
     QString line = csvFile.readLine();
@@ -552,7 +552,6 @@ bool ALICE::readRebus(const QString &year)
             fa->addTier(t);
         }
     }
-    csvFile.close();
 
     // now register the sites (CE and SE) which are not member of WLCG
     Resources res;
@@ -615,9 +614,14 @@ bool ALICE::readGlanceData(const QString &year)
 
     const QString fa("Funding Agency");
 
-    QFile csvFile(QString(":/data/%1/MandO.csv").arg(year));
-    if (!csvFile.open(QIODevice::ReadOnly))
+//    QFile csvFile(QString(":/data/%1/MandO.csv").arg(year));
+//    if (!csvFile.open(QIODevice::ReadOnly))
+//        return false;
+    QString fileName = QString("/data/%1/MandO.csv").arg(year);
+    QByteArray dataA = getReportFromWeb(fileName);
+    if (dataA.isEmpty())
         return false;
+    QTextStream csvFile(&dataA);
     // read the header row and find the column of funding agencies
     qint32 faColumn = 1;
     QString data = csvFile.readLine();
@@ -657,8 +661,6 @@ bool ALICE::readGlanceData(const QString &year)
 
         line++;
     }
-
-    csvFile.close();
 
     // fill the funding agencies list
 
@@ -706,10 +708,13 @@ bool ALICE::readRequirements(const QString &year)
     const QString t2Name("T2");
     const QString toName("Total smooth");
 
-    QFile csvFile(QString(":/data/%1/Requirements.csv").arg(year));
-    if (!csvFile.open(QIODevice::ReadOnly))
-        return false;
+
     // read the header row and find the column for CPU, Disk and Tape
+    QString fileName = QString("/data/%1/Requirements.csv").arg(year);
+    QByteArray dataA = getReportFromWeb(fileName);
+    if (dataA.isEmpty())
+        return false;
+    QTextStream csvFile(&dataA);
     QString data = csvFile.readLine();
     QStringList strList = data.split(';');
     qint32 cpuColumn  = -1;
@@ -737,7 +742,7 @@ bool ALICE::readRequirements(const QString &year)
     qint32 row = 0;
 
     while (!csvFile.atEnd()) {
-        QString data = csvFile.readLine();
+        data = csvFile.readLine();
         QStringList strList = data.split(';');
         if (strList.first() == t0Name)
             t0Row = row;
@@ -747,12 +752,16 @@ bool ALICE::readRequirements(const QString &year)
             t2Row = row;
         else if (strList.first() == toName)
             toRow = row;
+        else {
+            qWarning() << "File " << fileName << " not found !";
+            return false;
+        }
         row++;
     }
     csvFile.seek(0);
     csvFile.readLine();
     row = 0;
-    while (!csvFile.atEnd()) {
+    while (!csvFile.atEnd()) {        
         QString data = csvFile.readLine();
         QStringList strList = data.split(';');
         QString tempo = strList.at(cpuColumn);
@@ -781,8 +790,6 @@ bool ALICE::readRequirements(const QString &year)
         }
         row++;
     }
-
-    csvFile.close();
 
     if (MainWindow::isDebug()) {
         mT0Required.list();
@@ -847,6 +854,7 @@ bool ALICE::readMonthlyReport(const QDate &date)
     mToUsed.clear();
     qint32 hours = date.daysInMonth() * 24;
     QString month = date.toString("MMMM");
+    QString year  = QString::number(date.year());
     mCurrentUsedDate = date;
 
     // First read the monthly report provided by
@@ -859,12 +867,9 @@ bool ALICE::readMonthlyReport(const QDate &date)
     // line 5: header TIER1,"alice","atlas","cms","lhcb",Total
     // last line      Total, xxxxx (HEPSPEC06-hours)
 
-//    QString fileName = QString(":/data/%1/%2/TIER1_TIER1_sum_normcpu_TIER1_VO.csv").arg(date.year()).arg(date.month());
     QString fileName = QString("/data/%1/%2/TIER1_TIER1_sum_normcpu_TIER1_VO.csv").arg(date.year()).arg(date.month());
-//    QFile  csvFile(fileName);
     QByteArray data = getReportFromWeb(fileName);
     if (data.isEmpty())
-    //    if(!csvFile.open(QIODevice::ReadOnly))
         return false;
     QTextStream csvFile1(&data);
 
@@ -914,7 +919,6 @@ bool ALICE::readMonthlyReport(const QDate &date)
                 cpuUSumT1 += rcpu;
         }
     }
-//    csvFile.close();
 
     mT0Used.setCPU(cpuUSumT0, Resources::kHEPSPEC06);
     mT1Used.setCPU(cpuUSumT1, Resources::kHEPSPEC06);
@@ -924,9 +928,7 @@ bool ALICE::readMonthlyReport(const QDate &date)
     // line 1-4: header to be skipped only before 1/12/2016
     // line 5: COUNTRY,FEDERATION,2016 CPU Pledge (HEPSPEC06),pledge inc. efficiency (HEPSPEC06-Hrs),SITE,alice,atlas,cms,lhcb,Total,delivered as % of pledge
     fileName = QString(":/data/%1/%2/reptier2.csv").arg(date.year()).arg(date.month());
-//    csvFile.setFileName(fileName);
     data = getReportFromWeb(fileName);
-//     if(!csvFile.open(QIODevice::ReadOnly))
     if (data.isEmpty())
         return false;
     QTextStream csvFile2(&data);
@@ -986,7 +988,6 @@ bool ALICE::readMonthlyReport(const QDate &date)
             cpuUSumT2 += rcpu;
         }
     }
-//    csvFile.close();
     mT2Used.setCPU(cpuUSumT2, Resources::kHEPSPEC06);
     mToUsed.setCPU(cpuUSumT0 + cpuUSumT1 + cpuUSumT2, Resources::kHEPSPEC06);
 
@@ -1006,9 +1007,7 @@ bool ALICE::readMonthlyReport(const QDate &date)
 
     fileName = QString(":/data/%1/%2/CPU_Usage.csv").arg(date.year()).arg(date.month());
     data = getReportFromWeb(fileName);
-//    csvFile.setFileName(fileName);
-//    if(!csvFile.open(QIODevice::ReadOnly))
-    if (data.isEmpty())
+   if (data.isEmpty())
         return false;
     QTextStream csvFile3(&data);
     line = csvFile3.readLine();
@@ -1028,7 +1027,6 @@ bool ALICE::readMonthlyReport(const QDate &date)
         }
         linecount++;
     }
-//    csvFile.close();
     QHashIterator<QString, double> cpuit(cpuUsage);
     while (cpuit.hasNext()) {
         cpuit.next();
@@ -1054,9 +1052,7 @@ bool ALICE::readMonthlyReport(const QDate &date)
 
 
     fileName = QString(":/data/%1/%2/Disk_Tape_Usage.csv").arg(date.year()).arg(date.month());
-//    csvFile.setFileName(fileName);
     data = getReportFromWeb(fileName);
-//    if(!csvFile.open(QIODevice::ReadOnly))
     if (data.isEmpty())
         return false;
     QTextStream csvFile4(&data);
@@ -1079,7 +1075,6 @@ bool ALICE::readMonthlyReport(const QDate &date)
         }
         linecount++;
     }
-//    csvFile.close();
 
     double tapeUSumT0 = 0.0;
     double tapeUSumT1 = 0.0;
@@ -1174,25 +1169,25 @@ bool ALICE::readMonthlyReport(const QDate &date)
     QStandardItem *totalcpuSIU  = new QStandardItem(QString("%1").arg(cpuUSum,  5, 'f', 2));
     lcpuUColumn.append(totalcpuSIU);
     mModel->appendColumn(lcpuUColumn);
-    QString header = QString("%1 \n Used CPU (kHEPSPEC06)").arg(month);
+    QString header = QString("%1 %2 \n Used CPU (kHEPSPEC06)").arg(month).arg(year);
     mModel->setHorizontalHeaderItem(mModel->columnCount() -1, new QStandardItem(header));
 
     QStandardItem *totalcpuSIUML  = new QStandardItem(QString("%1").arg(cpuUSumML,  5, 'f', 2));
     lcpuUColumnML.append(totalcpuSIUML);
     mModel->appendColumn(lcpuUColumnML);
-    header = QString("%1 \n ML Used CPU (kHEPSPEC06)").arg(month);
+    header = QString("%1 %2 \n ML Used CPU (kHEPSPEC06)").arg(month).arg(year);
     mModel->setHorizontalHeaderItem(mModel->columnCount() -1, new QStandardItem(header));
 
     QStandardItem *totaldiskSIUML  = new QStandardItem(QString("%1").arg(diskUSumML,  5, 'f', 2));
     ldiskUColumnML.append(totaldiskSIUML);
     mModel->appendColumn(ldiskUColumnML);
-    header = QString("%1 \n ML Used Disk (PB)").arg(month);
+    header = QString("%1 %2\n ML Used Disk (PB)").arg(month).arg(year);
     mModel->setHorizontalHeaderItem(mModel->columnCount() - 1, new QStandardItem(header));
 
     QStandardItem *totaltapeSIUML  = new QStandardItem(QString("%1").arg(tapeUSumML,  5, 'f', 2));
     ltapeUColumnML.append(totaltapeSIUML);
     mModel->appendColumn(ltapeUColumnML);
-    header = QString("%1 \n ML Used Tape (PB)").arg(month);
+    header = QString("%1 %2 \n ML Used Tape (PB)").arg(month).arg(year);
     mModel->setHorizontalHeaderItem(mModel->columnCount() - 1, new QStandardItem(header));
 
 
@@ -1292,6 +1287,7 @@ FundingAgency *ALICE::searchFA(const QString &n) const
     else if (name == "Latin America")
         name = "Brazil";
     for (FundingAgency *fa : mFAs) {
+        qDebug() << Q_FUNC_INFO << name << fa->name();
         if (fa->name().contains(name) && fa->name().left(1) != "-") {
            return fa;
            break;

@@ -26,7 +26,6 @@
 #include <QPicture>
 #include <QPrinter>
 #include <QProgressBar>
-#include <QSpinBox>
 #include <QSplitter>
 #include <QScatterSeries>
 #include <QSslConfiguration>
@@ -140,6 +139,22 @@ void MainWindow::paintEvent(QPaintEvent *event)
 }
 
 //===========================================================================
+void MainWindow::doit(qint32 opt)
+{
+    // does various things upon request
+    switch (opt) {
+    case kTheBigTable:
+        selectDate(kTheBigTable);
+        break;
+    case kGetReport:
+        selectDate(kGetReport);
+        break;
+    default:
+        break;
+    }
+}
+
+//===========================================================================
 void MainWindow::findAName()
 {   //FIXME: Find a suitable name for this method
     // display data retrieved from mURL
@@ -184,8 +199,7 @@ void MainWindow::parsePlotUrlFile(PlotOptions opt)
 
     mDownLoadText->setText("DONE");
 
-    mProgressBarWidget->close();
-
+    setProgressBar(false);
 
     QTextStream stream(&data);
     QString line;
@@ -259,6 +273,26 @@ void MainWindow::transferProgress(qint64 readBytes, qint64 totalBytes)
 }
 
 //===========================================================================
+void MainWindow::validateDate(ActionOptions opt)
+{
+    //sets date and launches data collection from url
+    qobject_cast<QWidget*>(sender()->parent())->close();
+
+    QDate date = mDEStart->date();
+
+    switch (opt) {
+    case kTheBigTable:
+        doeReqAndPle(QString::number(date.year()));
+        break;
+    case kGetReport:
+        readMonthlyReport(date);
+        break;
+    default:
+        break;
+    }
+}
+
+//===========================================================================
 void MainWindow::validateDates(PlotOptions opt)
 {
     //sets start and end date and launches data collection from url
@@ -270,6 +304,26 @@ void MainWindow::validateDates(PlotOptions opt)
     qint64 diffE = dEnd.daysTo(QDate::currentDate()) * 24 *3600 * 1000;
 
     switch (opt) {
+    case kRequirementsProfile:
+    {
+        mURL = QString("http://alicecrm.web.cern.ch");
+        plProfile(kRequirementsProfile, Resources::kCPU);
+        plProfile(kRequirementsProfile, Resources::kDISK);
+        plProfile(kRequirementsProfile, Resources::kTAPE);
+
+        break;
+    }
+
+    case kPledgesProfile:
+    {
+        mURL = QString("http://alicecrm.web.cern.ch");
+        plProfile(kPledgesProfile, Resources::kCPU);
+        plProfile(kPledgesProfile, Resources::kDISK);
+        plProfile(kPledgesProfile, Resources::kTAPE);
+
+        break;
+    }
+
     case kRegisteredDataProfile:
     {
         mURL = QString("http://alimonitor.cern.ch/display");
@@ -277,6 +331,30 @@ void MainWindow::validateDates(PlotOptions opt)
         mURL += QString("&interval.max=%1&interval.min=%2").arg(diffS).arg(diffE);
         mURL += "&page=DAQ2%2Fdaq_size&plot_series=aldaqgw01-daq03.cern.ch&plot_series=aldaqgw02-daq03.cern.ch&download_data_csv=true";
         plProfile(kRegisteredDataProfile);
+        break;
+    }
+    case kUsageProfile:
+    {
+        mURL = QString("http://alicecrm.web.cern.ch");
+        plProfile(kUsageProfile, Resources::kCPU);
+        plProfile(kUsageProfile, Resources::kDISK);
+        plProfile(kUsageProfile, Resources::kTAPE);
+        break;
+    }
+    case kUsage_PledgesProfile:
+    {
+        mURL = QString("http://alicecrm.web.cern.ch");
+        plProfile(kUsage_PledgesProfile, Resources::kCPU);
+        plProfile(kUsage_PledgesProfile, Resources::kDISK);
+        plProfile(kUsage_PledgesProfile, Resources::kTAPE);
+        break;
+    }
+    case kUsage_RequiredProfile:
+    {
+        mURL = QString("http://alicecrm.web.cern.ch");
+        plProfile(kUsage_RequiredProfile, Resources::kCPU);
+        plProfile(kUsage_RequiredProfile, Resources::kDISK);
+        plProfile(kUsage_RequiredProfile, Resources::kTAPE);
         break;
     }
     case kTierEfficiencyProfile:
@@ -296,7 +374,7 @@ void MainWindow::validateDates(PlotOptions opt)
         mURL += "&page=jpu%2Fefficiency&download_data_csv=true";
         plProfile(kUserEfficiencyProfile);
         break;
-    }
+    } 
     default:
         break;
 
@@ -373,45 +451,20 @@ void MainWindow::createActions()
     connect(mDebugOnAction, &QAction::triggered, this, [this]{ setDebugMode(true); });
     connect(mDebugOffAction, &QAction::triggered, this, [this]{ setDebugMode(false); });
 
-    QDir dataDir(":/data/");
-
-    // monthly reports reading action
-    dataDir.setPath(":/data/");
-    dataDir.setFilter(QDir::AllDirs);
-    for (QString subDir : dataDir.entryList(QDir::Dirs)) {
-        QMenu *menu = new QMenu(subDir);
-        QDir dirDir(QString(":/data/%1/").arg(subDir));
-        QStringList monthes = dirDir.entryList(QDir::Dirs);
-        MyLessThan lt;
-        qSort(monthes.begin(), monthes.end(), lt);
-        for (QString subsubDir : monthes) {
-            QAction *act = new QAction(this);
-            QDate date(subDir.toInt(), subsubDir.toInt(), 1);
-            QString month = QDate::longMonthName(subsubDir.toInt());
-            act->setText(QString("%1").arg(month));
-            connect(act, &QAction::triggered, this, [date, this]{ readMonthlyReport(date); });
-            menu->addAction(act);
-        }
-        mReportsMenus.append(menu);
-    }
-
-    // list actions
-    mListAction = new QAction(this);
-    mListAction->setText("List FA + MandO");
-    mListAction->setStatusTip("list all funding agencies and their respective M&O payers");
-    connect(mListAction, &QAction::triggered, this, [this]{list(ALICE::kFA);});
-
-    // do the requirements and pledges table
-    dataDir.setPath(":/data/");
-    for (QString subDir : dataDir.entryList(QDir::Dirs)) {
+    // actions
+    QMetaEnum me = QMetaEnum::fromType<ActionOptions>();
+    for (qint32 index = 0; index < me.keyCount(); index++) {
+        QString     swhat  = me.key(index);
+        swhat.remove(0, 1); // removes the "k"
+        qint32      what   = me.value(index);
         QAction *act = new QAction(this);
-        act->setText(QString("%1").arg(subDir));
-        connect(act, &QAction::triggered, this, [subDir, this]{ doeReqAndPle(subDir); });
-        mDoReqPle.append(act);
+        act->setText(QString("do %1").arg(swhat));
+        connect(act, &QAction::triggered, this, [what, this]{ doit(what); });
+        mLiAct.append(act);
     }
 
     // plots
-    QMetaEnum me = QMetaEnum::fromType<PlotOptions>();
+    me = QMetaEnum::fromType<PlotOptions>();
     for (qint32 index = 0; index < me.keyCount(); index++) {
         QString     swhat  = me.key(index);
         swhat.remove(0, 1); // removes the "k"
@@ -479,18 +532,9 @@ void MainWindow::createMenu()
         loMenu->addAction(act);
 
     // Actions
-    QMenu *actionMenu = menuBar()->addMenu(tr("&Actions"));
-
-    QMenu *doReqPle = new QMenu(tr("Requirements and Pledges"));
-    for (QAction * act : mDoReqPle)
-        doReqPle->addAction(act);
-    actionMenu->addMenu(doReqPle);
-
-    QMenu *readRP = new QMenu(tr("read reports"));
-    for (QMenu *menu : mReportsMenus) {
-        readRP->addMenu(menu);
-    }
-    actionMenu->addMenu(readRP);
+    QMenu *acMenu = menuBar()->addMenu(tr("&Actions"));
+    for (QAction * act : mLiAct)
+        acMenu->addAction(act);
 
     QMenu *plMenu = menuBar()->addMenu(tr("Do various plots"));
     for (QAction * act : mPlAct)
@@ -615,9 +659,6 @@ void MainWindow::load(qint32 opt)
         break;
     case kMLRAWProd:
         selectDates(kMLRAWProd);
-        break;
-    case kTest:
-        test();
         break;
     default:
         break;
@@ -848,7 +889,7 @@ void MainWindow::plRegisteredData(PlotOptions opt)
 }
 
 //===========================================================================
-void MainWindow::plTierEfficiency(MainWindow::PlotOptions opt)
+void MainWindow::plTierEfficiency(PlotOptions opt)
 {
     // plot the efficiency per Tier (Tier0, Tiers1, Tiers2)
     // data is a list of QVector rows,
@@ -1022,7 +1063,7 @@ void MainWindow::plTierEfficiency(MainWindow::PlotOptions opt)
 }
 
 //===========================================================================
-void MainWindow::plUserEfficiency(MainWindow::PlotOptions opt)
+void MainWindow::plUserEfficiency(PlotOptions opt)
 {
     // plot the efficiency per user
     // data is a list of QVector rows,
@@ -1215,19 +1256,7 @@ void MainWindow:: getDataFromWeb(PlotOptions opt)
 {
     // plot the registered data profile
 
-    mProgressBarWidget = new QWidget();
-    mProgressBarWidget->setAttribute(Qt::WA_DeleteOnClose);
-    mProgressBarWidget->setLayout(new QVBoxLayout);
-
-    mProgressBar = new QProgressBar(mProgressBarWidget);
-    mProgressBarWidget->layout()->addWidget(mProgressBar);
-
-    mDownLoadText = new QLabel(mProgressBarWidget);
-    mDownLoadText->setText(QString("Downloading from %1").arg(mURL));
-    mDownLoadText->setAlignment(Qt::AlignHCenter);
-    mProgressBarWidget->layout()->addWidget(mDownLoadText);
-    mProgressBarWidget->show();
-
+    setProgressBar(true);
 
     QNetworkRequest request;
     QSslConfiguration conf = request.sslConfiguration();
@@ -1249,18 +1278,8 @@ void MainWindow:: getDataFromWeb(PlotOptions opt)
 void MainWindow::getDataFromWeb(const QDate &date, Tier::TierCat cat)
 {
     // connect to the mURL and continue with saveURLFile when connection established
-    mProgressBarWidget = new QWidget();
-    mProgressBarWidget->setAttribute(Qt::WA_DeleteOnClose);
-    mProgressBarWidget->setLayout(new QVBoxLayout);
 
-    mProgressBar = new QProgressBar(mProgressBarWidget);
-    mProgressBarWidget->layout()->addWidget(mProgressBar);
-
-    mDownLoadText = new QLabel(mProgressBarWidget);
-    mDownLoadText->setText(QString("Downloading from %1").arg(mURL));
-    mDownLoadText->setAlignment(Qt::AlignHCenter);
-    mProgressBarWidget->layout()->addWidget(mDownLoadText);
-    mProgressBarWidget->show();
+    setProgressBar(true);
 
     QNetworkRequest request;
     QSslConfiguration conf = request.sslConfiguration();
@@ -1279,22 +1298,11 @@ void MainWindow::getDataFromWeb(const QDate &date, Tier::TierCat cat)
 }
 
 //===========================================================================
-void MainWindow::getDataFromWeb(const QDate &date, MainWindow::LoadOptions opt)
+void MainWindow::getDataFromWeb(const QDate &date, LoadOptions opt)
 {
     // connect to the mURL and continue with saveURLFile when connection established
 
-    mProgressBarWidget = new QWidget();
-    mProgressBarWidget->setAttribute(Qt::WA_DeleteOnClose);
-    mProgressBarWidget->setLayout(new QVBoxLayout);
-
-    mProgressBar = new QProgressBar(mProgressBarWidget);
-    mProgressBarWidget->layout()->addWidget(mProgressBar);
-
-    mDownLoadText = new QLabel(mProgressBarWidget);
-    mDownLoadText->setText(QString("Downloading from %1").arg(mURL));
-    mDownLoadText->setAlignment(Qt::AlignHCenter);
-    mProgressBarWidget->layout()->addWidget(mDownLoadText);
-    mProgressBarWidget->show();
+    setProgressBar(true);
 
     QNetworkRequest request;
 
@@ -1339,7 +1347,7 @@ void MainWindow::getDataFromWeb(const QDate &date, MainWindow::LoadOptions opt)
 }
 
 //===========================================================================
-void MainWindow::getDataFromFile(MainWindow::PlotOptions opt)
+void MainWindow::getDataFromFile(PlotOptions opt)
 {
     // reads data from a local file into mPLData and mPLDataName
 
@@ -1416,76 +1424,77 @@ void MainWindow::plProfile(PlotOptions opt, Resources::Resources_type type)
     headers.replace(colTo, "Total");
     model->setHeader(headers);
 
+    setProgressBar();
+    int count = 0;
+
     QVector<double> *dataVec = new QVector<double>(columns - 2);
     QString xAxisFormat;
     QString xAxisTitle;
     if (opt == kRequirementsProfile || opt == kPledgesProfile) {
         xAxisFormat = "yyyy";
         xAxisTitle = "Year";
-        QDir dataDir(":/data/");
-        for (QString year : dataDir.entryList(QDir::Dirs)) {
+        int years = mDEStart->date().daysTo(mDEEnd->date()) / 365;
+        for (int year = mDEStart->date().year(); year <= mDEEnd->date().year(); year++) {
+            transferProgress(count++, years);
             if (opt == kRequirementsProfile) {
-                dataVec->replace(colT0 - 2, ALICE::instance().getRequired(Tier::kT0,   type, year));
-                dataVec->replace(colT1 - 2, ALICE::instance().getRequired(Tier::kT1,   type, year));
-                dataVec->replace(colT2 - 2, ALICE::instance().getRequired(Tier::kT2,   type, year));
-                dataVec->replace(colTo - 2, ALICE::instance().getRequired(Tier::kTOTS, type, year));
-                model->addData(year, dataVec);
+                    dataVec->replace(colT0 - 2, ALICE::instance().getRequired(Tier::kT0,   type, QString::number(year)));
+                dataVec->replace(colT1 - 2, ALICE::instance().getRequired(Tier::kT1,   type, QString::number(year)));
+                dataVec->replace(colT2 - 2, ALICE::instance().getRequired(Tier::kT2,   type, QString::number(year)));
+                dataVec->replace(colTo - 2, ALICE::instance().getRequired(Tier::kTOTS, type, QString::number(year)));
+                model->addData(QString::number(year), dataVec);
             } else if (opt == kPledgesProfile) {
-                dataVec->replace(colT0 - 2, ALICE::instance().getPledged(Tier::kT0,   type, year));
-                dataVec->replace(colT1 - 2, ALICE::instance().getPledged(Tier::kT1,   type, year));
-                dataVec->replace(colT2 - 2, ALICE::instance().getPledged(Tier::kT2,   type, year));
-                dataVec->replace(colTo - 2, ALICE::instance().getPledged(Tier::kTOTS, type, year));
-                model->addData(year, dataVec);
+                dataVec->replace(colT0 - 2, ALICE::instance().getPledged(Tier::kT0,   type, QString::number(year)));
+                dataVec->replace(colT1 - 2, ALICE::instance().getPledged(Tier::kT1,   type, QString::number(year)));
+                dataVec->replace(colT2 - 2, ALICE::instance().getPledged(Tier::kT2,   type, QString::number(year)));
+                dataVec->replace(colTo - 2, ALICE::instance().getPledged(Tier::kTOTS, type, QString::number(year)));
+                model->addData(QString::number(year), dataVec);
             }
         }
     } else if (opt == kUsageProfile || opt == kUsage_PledgesProfile || opt == kUsage_RequiredProfile) {
         xAxisFormat = "MM-yyyy";
         xAxisTitle = "Date";
         ALICE::instance().setDrawTable(false);
-        QDir dataDir(":/data/");
-        for (QString year : dataDir.entryList(QDir::Dirs)) {
-            QDir subDataDir(QString("%1/%2").arg(dataDir.path()).arg(year));
-            QStringList monthes = subDataDir.entryList(QDir::Dirs);
-            MyLessThan lt;
-            qSort(monthes.begin(), monthes.end(), lt);
-            for (QString month : monthes) {
-                QDate date(year.toInt(), month.toInt(), 1);
-                double value0 = 0.0;
-                double value1 = 0.0;
-                double value2 = 0.0;
-                double valueo = 0.0;
-                if (opt == kUsageProfile) {
-                    value0 = ALICE::instance().getUsed(Tier::kT0,   type, date);
-                    value1 = ALICE::instance().getUsed(Tier::kT1,   type, date);
-                    value2 = ALICE::instance().getUsed(Tier::kT2,   type, date);
-                    valueo = ALICE::instance().getUsed(Tier::kTOTS, type, date);
-                } else if (opt == kUsage_PledgesProfile){
-                    value0 = 100 * ALICE::instance().getUsed(Tier::kT0,   type, date) / ALICE::instance().getPledged(Tier::kT0,   type, year);
-                    value1 = 100 * ALICE::instance().getUsed(Tier::kT1,   type, date) / ALICE::instance().getPledged(Tier::kT1,   type, year);
-                    value2 = 100 * ALICE::instance().getUsed(Tier::kT2,   type, date) / ALICE::instance().getPledged(Tier::kT2,   type, year);
-                    valueo = 100 * ALICE::instance().getUsed(Tier::kTOTS, type, date) / ALICE::instance().getPledged(Tier::kTOTS, type, year);
-                } else {
-                    value0 = 100 * ALICE::instance().getUsed(Tier::kT0,   type, date) / ALICE::instance().getRequired(Tier::kT0,   type, year);
-                    value1 = 100 * ALICE::instance().getUsed(Tier::kT1,   type, date) / ALICE::instance().getRequired(Tier::kT1,   type, year);
-                    value2 = 100 * ALICE::instance().getUsed(Tier::kT2,   type, date) / ALICE::instance().getRequired(Tier::kT2,   type, year);
-                    valueo = 100 * ALICE::instance().getUsed(Tier::kTOTS, type, date) / ALICE::instance().getRequired(Tier::kTOTS, type, year);
-                }
-                dataVec->replace(colT0 - 2, value0);
-                dataVec->replace(colT1 - 2, value1);
-                dataVec->replace(colT2 - 2, value2);
-                dataVec->replace(colTo - 2, valueo);
-                model->addData(QDateTime(date), dataVec);
+        QDate date = mDEStart->date();
+        int months = date.daysTo(mDEEnd->date()) / 30;
+        while (date <= mDEEnd->date()) {
+            transferProgress(count++, months);
+            double value0 = 0.0;
+            double value1 = 0.0;
+            double value2 = 0.0;
+            double valueo = 0.0;
+            if (opt == kUsageProfile) {
+                value0 = ALICE::instance().getUsed(Tier::kT0,   type, date);
+                value1 = ALICE::instance().getUsed(Tier::kT1,   type, date);
+                value2 = ALICE::instance().getUsed(Tier::kT2,   type, date);
+                valueo = ALICE::instance().getUsed(Tier::kTOTS, type, date);
+            } else if (opt == kUsage_PledgesProfile){
+                value0 = 100 * ALICE::instance().getUsed(Tier::kT0,   type, date) / ALICE::instance().getPledged(Tier::kT0,   type, QString::number(date.year()));
+                value1 = 100 * ALICE::instance().getUsed(Tier::kT1,   type, date) / ALICE::instance().getPledged(Tier::kT1,   type, QString::number(date.year()));
+                value2 = 100 * ALICE::instance().getUsed(Tier::kT2,   type, date) / ALICE::instance().getPledged(Tier::kT2,   type, QString::number(date.year()));
+                valueo = 100 * ALICE::instance().getUsed(Tier::kTOTS, type, date) / ALICE::instance().getPledged(Tier::kTOTS, type, QString::number(date.year()));
+            } else {
+                value0 = 100 * ALICE::instance().getUsed(Tier::kT0,   type, date) / ALICE::instance().getRequired(Tier::kT0,   type, QString::number(date.year()));
+                value1 = 100 * ALICE::instance().getUsed(Tier::kT1,   type, date) / ALICE::instance().getRequired(Tier::kT1,   type, QString::number(date.year()));
+                value2 = 100 * ALICE::instance().getUsed(Tier::kT2,   type, date) / ALICE::instance().getRequired(Tier::kT2,   type, QString::number(date.year()));
+                valueo = 100 * ALICE::instance().getUsed(Tier::kTOTS, type, date) / ALICE::instance().getRequired(Tier::kTOTS, type, QString::number(date.year()));
             }
+            dataVec->replace(colT0 - 2, value0);
+            dataVec->replace(colT1 - 2, value1);
+            dataVec->replace(colT2 - 2, value2);
+            dataVec->replace(colTo - 2, valueo);
+            model->addData(QDateTime(date), dataVec);
+            date = date.addMonths(1);
         }
         ALICE::instance().setDrawTable(true);
     }
+    setProgressBar(false);
 
     double ymax = model->findMax();
     int exp = qFloor(qLn(ymax) / qLn(10));
     if (ymax  < qPow(10., exp))
-            ymax = qPow(10., exp);
+        ymax = qPow(10., exp);
     else {
-            ymax = qCeil(ymax / qPow(10, exp)) * qPow(10, exp);
+        ymax = qCeil(ymax / qPow(10, exp)) * qPow(10, exp);
     }
 
     QTableView *tableView = new QTableView;
@@ -1720,8 +1729,9 @@ void MainWindow::printCurrentWindow() const
 }
 
 //===========================================================================
-void MainWindow::saveUrlFile(const QDate &date, MainWindow::LoadOptions opt)
+void MainWindow::saveUrlFile(const QDate &date, LoadOptions opt)
 {
+    Q_UNUSED(date);
     // save the url as a file
     QNetworkReply *reply = qobject_cast<QNetworkReply*>(sender());
     QByteArray data = reply->readAll();
@@ -1751,12 +1761,14 @@ void MainWindow::saveUrlFile(const QDate &date, MainWindow::LoadOptions opt)
         }
         file.close();
     }
-    mProgressBarWidget->close();
+
+    setProgressBar(false);
 }
 
 //===========================================================================
 void MainWindow::saveUrlFile(const QDate &date, Tier::TierCat cat)
 {
+    Q_UNUSED(date);
     // save the url as a file
     QNetworkReply *reply = qobject_cast<QNetworkReply*>(sender());
     QByteArray data = reply->readAll();
@@ -1786,7 +1798,7 @@ void MainWindow::saveUrlFile(const QDate &date, Tier::TierCat cat)
         }
         file.close();
     }
-    mProgressBarWidget->close();
+    setProgressBar(false);
 }
 
 //===========================================================================
@@ -1802,49 +1814,33 @@ void MainWindow::plProfile(PlotOptions opt)
     }
     case kRequirementsProfile:
     {
-        plProfile(kRequirementsProfile, Resources::kCPU);
-        plProfile(kRequirementsProfile, Resources::kDISK);
-        plProfile(kRequirementsProfile, Resources::kTAPE);
-
+        selectDates(kRequirementsProfile, QDate(2025, 1, 1));
         break;
     }
     case kPledgesProfile:
     {
-        plProfile(kPledgesProfile, Resources::kCPU);
-        plProfile(kPledgesProfile, Resources::kDISK);
-        plProfile(kPledgesProfile, Resources::kTAPE);
-
+        selectDates(kPledgesProfile);
         break;
     }
 
     case kRegisteredDataProfile:
     {
         getDataFromWeb(kRegisteredDataProfile);
-
         break;
     }
     case kUsageProfile:
     {
-        plProfile(kUsageProfile, Resources::kCPU);
-        plProfile(kUsageProfile, Resources::kDISK);
-        plProfile(kUsageProfile, Resources::kTAPE);
-
+        selectDates(kUsageProfile);
         break;
     }
     case kUsage_PledgesProfile:
     {
-        plProfile(kUsage_PledgesProfile, Resources::kCPU);
-        plProfile(kUsage_PledgesProfile, Resources::kDISK);
-        plProfile(kUsage_PledgesProfile, Resources::kTAPE);
-
+        selectDates(kUsage_PledgesProfile);
         break;
     }
     case kUsage_RequiredProfile:
     {
-        plProfile(kUsage_RequiredProfile, Resources::kCPU);
-        plProfile(kUsage_RequiredProfile, Resources::kDISK);
-        plProfile(kUsage_RequiredProfile, Resources::kTAPE);
-
+        selectDates(kUsage_RequiredProfile);
         break;
     }
     case kTierEfficiencyProfile:
@@ -2143,7 +2139,35 @@ void MainWindow::saveData(PlotOptions opt)
 }
 
 //===========================================================================
-void MainWindow::selectDates(PlotOptions opt)
+void MainWindow::selectDate(ActionOptions opt)
+{
+    //selects a date
+
+    QWidget *datesel = new QWidget();
+    datesel->setAttribute(Qt::WA_DeleteOnClose);
+    datesel->setWindowTitle("Select a date");
+
+    QLabel *lDate = new QLabel("Date", datesel);
+    QDate date(QDate::currentDate());
+    mDEStart = new QDateEdit(datesel);
+    mDEStart->setMaximumDate(QDate::currentDate());
+    mDEStart->setMinimumDate(QDate(2014, 1, 1));
+    mDEStart->setCalendarPopup(true);
+    mDEStart->setDate(date);
+
+    QPushButton *okButton = new QPushButton("OK", datesel);
+    connect(okButton, &QPushButton::clicked, this, [this, opt]{ validateDate(opt); });
+
+    QGridLayout *layout = new QGridLayout;
+    layout->addWidget(lDate, 0, 0, 1, 1, Qt::AlignLeft);
+    layout->addWidget(mDEStart, 0, 1, 1, 1, Qt::AlignLeft);
+    layout->addWidget(okButton, 2, 0, 1, 2, Qt::AlignHCenter);
+    datesel->setLayout(layout);
+    datesel->show();
+}
+
+//===========================================================================
+void MainWindow::selectDates(PlotOptions opt, QDate dateMax)
 {
     //selects a start and end date
 
@@ -2153,17 +2177,16 @@ void MainWindow::selectDates(PlotOptions opt)
 
     QLabel *startDate = new QLabel("Start Date");
     QLabel *endDate   = new QLabel("End Date");
-
     QDate dateStart(QDate::currentDate());
     mDEStart = new QDateEdit();
     mDEStart->setMaximumDate(QDate::currentDate());
-    mDEStart->setMinimumDate(QDate(2014, 9, 1));
+    mDEStart->setMinimumDate(QDate(2014, 1, 1));
     mDEStart->setCalendarPopup(true);
     mDEStart->setDate(dateStart);
     QDate dateEnd = mDEStart->date().addMonths(-1);
     mDEEnd = new QDateEdit();
-    mDEEnd->setMaximumDate(QDate::currentDate());
-    mDEEnd->setMinimumDate(QDate(2014, 9, 1));
+    mDEEnd->setMaximumDate(dateMax);
+    mDEEnd->setMinimumDate(QDate(2014, 2, 1));
     mDEEnd->setCalendarPopup(true);
     mDEEnd->setDate(dateEnd);
 
@@ -2181,7 +2204,7 @@ void MainWindow::selectDates(PlotOptions opt)
 }
 
 //===========================================================================
-void MainWindow::selectDates(MainWindow::LoadOptions opt)
+void MainWindow::selectDates(LoadOptions opt)
 {
     //selects a start and end date
 
@@ -2217,53 +2240,24 @@ void MainWindow::selectDates(MainWindow::LoadOptions opt)
 }
 
 //===========================================================================
-void MainWindow::test()
+void MainWindow::setProgressBar(bool on)
 {
-    // test reading accounting data from the web
+    // activate and desactivate progress bar when downloading data
 
-    QNetworkRequest request;
-    QSslConfiguration conf = request.sslConfiguration();
-    conf.setPeerVerifyMode(QSslSocket::VerifyNone);
-    request.setSslConfiguration(conf);
-    mURL = "http://alicecrm.web.cern.ch/data/2016/12/TIER1_TIER1_sum_normcpu_TIER1_VO.csv";
-    request.setUrl(mURL);
+    if (on) {
+        mProgressBarWidget = new QWidget();
+        mProgressBarWidget->setAttribute(Qt::WA_DeleteOnClose);
+        mProgressBarWidget->setLayout(new QVBoxLayout);
 
-    if (!mNetworkManager)
-        mNetworkManager = new QNetworkAccessManager(this);
-    QNetworkReply *reply = mNetworkManager->get(request);
+        mProgressBar = new QProgressBar(mProgressBarWidget);
+        mProgressBarWidget->layout()->addWidget(mProgressBar);
 
-    mProgressBarWidget = new QWidget();
-    mProgressBarWidget->setAttribute(Qt::WA_DeleteOnClose);
-    mProgressBarWidget->setLayout(new QVBoxLayout);
-
-    mProgressBar = new QProgressBar(mProgressBarWidget);
-    mProgressBarWidget->layout()->addWidget(mProgressBar);
-
-    mDownLoadText = new QLabel(mProgressBarWidget);
-    mDownLoadText->setText(QString("Downloading from %1").arg(mURL));
-    mDownLoadText->setAlignment(Qt::AlignHCenter);
-    mProgressBarWidget->layout()->addWidget(mDownLoadText);
-    mProgressBarWidget->show();
-
-    connect(reply, SIGNAL(downloadProgress(qint64,qint64)), this, SLOT(transferProgress(qint64,qint64)));
-    connect(reply, SIGNAL(error(QNetworkReply::NetworkError)), this, SLOT(showNetworkError(QNetworkReply::NetworkError)));
-
-    QEventLoop loop;
-    connect(reply, SIGNAL(finished()), &loop, SLOT(quit()));
-    qDebug() << Q_FUNC_INFO;
-    loop.exec();
-
-    QByteArray data = reply->readAll();
-
-    mProgressBarWidget->close();
-
-    QTextStream stream(&data);
-    qDebug() << Q_FUNC_INFO << stream.readLine();
-    qDebug() << Q_FUNC_INFO << stream.readLine();
-    qDebug() << Q_FUNC_INFO << stream.readLine();
-    qDebug() << Q_FUNC_INFO << stream.readLine();
-    qDebug() << Q_FUNC_INFO << stream.readLine();
-    qDebug() << Q_FUNC_INFO << stream.readLine();
-    qDebug() << Q_FUNC_INFO << stream.readLine();
-    qDebug() << Q_FUNC_INFO << stream.readLine();
+        mDownLoadText = new QLabel(mProgressBarWidget);
+        mDownLoadText->setText(QString("Downloading from %1").arg(mURL));
+        mDownLoadText->setAlignment(Qt::AlignHCenter);
+        mProgressBarWidget->layout()->addWidget(mDownLoadText);
+        mProgressBarWidget->show();
+    } else {
+        mProgressBarWidget->close();
+    }
 }

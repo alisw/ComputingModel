@@ -38,7 +38,7 @@ void PlTableModel::addData(const QDateTime &date, QVector<double> *vec)
     qint32 size = vec->size() + 2;
     QVector<double> *dataVec = new QVector<double>(size);
     dataVec->replace(0, (double) date.toMSecsSinceEpoch());
-    dataVec->replace(1, date.date().month());
+    dataVec->replace(1, date.date().month()+ date.date().year()/10000.);
     for (qint32 index = 0; index < vec->size(); index++)
         dataVec->replace(index + 2, vec->at(index));
     mData.append(dataVec);
