@@ -2,6 +2,9 @@
 
 #include <QAction>
 #include <QAreaSeries>
+#include <QBarCategoryAxis>
+#include <QBarSeries>
+#include <QBarSet>
 #include <QCalendarWidget>
 #include <QCategoryAxis>
 #include <QChart>
@@ -32,6 +35,7 @@
 #include <QStatusBar>
 #include <QToolBar>
 #include <QValueAxis>
+#include <QVBarModelMapper>
 #include <QVBoxLayout>
 #include <QVXYModelMapper>
 
@@ -249,6 +253,9 @@ void MainWindow::parsePlotUrlFile(PlotOptions opt)
     case kPledgesProfile:
         saveData(opt);
         break;
+    case kEventSizeProfile:
+        plProfileEventSize();
+        break;
     default:
         break;
     }
@@ -304,6 +311,12 @@ void MainWindow::validateDates(PlotOptions opt)
     qint64 diffE = dEnd.daysTo(QDate::currentDate()) * 24 *3600 * 1000;
 
     switch (opt) {
+    case kMandOProfile:
+    {
+        plProfileMandO();
+
+        break;
+    }
     case kRequirementsProfile:
     {
         mURL = QString("http://alicecrm.web.cern.ch");
@@ -330,7 +343,7 @@ void MainWindow::validateDates(PlotOptions opt)
         mURL += "?imgsize=1024x600";
         mURL += QString("&interval.max=%1&interval.min=%2").arg(diffS).arg(diffE);
         mURL += "&page=DAQ2%2Fdaq_size&plot_series=aldaqgw01-daq03.cern.ch&plot_series=aldaqgw02-daq03.cern.ch&download_data_csv=true";
-        plProfile(kRegisteredDataProfile);
+        getDataFromWeb(kRegisteredDataProfile);
         break;
     }
     case kUsageProfile:
@@ -363,7 +376,7 @@ void MainWindow::validateDates(PlotOptions opt)
         mURL += "?annotation.enabled=true&imgsize=1280x700";
         mURL += QString("&interval.max=%1&interval.min=%2").arg(diffS).arg(diffE);
         mURL += "&page=jobResUsageSum_eff_time&download_data_csv=true";
-        plProfile(kTierEfficiencyProfile);
+        getDataFromWeb(kTierEfficiencyProfile);
         break;
     }
     case kUserEfficiencyProfile:
@@ -372,9 +385,17 @@ void MainWindow::validateDates(PlotOptions opt)
         mURL += "?annotation.enabled=true&imgsize=1280x700";
         mURL += QString("&interval.max=%1&interval.min=%2").arg(diffS).arg(diffE);
         mURL += "&page=jpu%2Fefficiency&download_data_csv=true";
-        plProfile(kUserEfficiencyProfile);
+        getDataFromWeb(kUserEfficiencyProfile);
         break;
     } 
+    case kPledgedRequiredUsed:
+    {
+        mURL = QString("http://alicecrm.web.cern.ch");
+        plBarchart(Resources::kCPU);
+        plBarchart(Resources::kDISK);
+        plBarchart(Resources::kTAPE);
+        break;
+    }
     default:
         break;
 
@@ -753,6 +774,120 @@ void MainWindow::loadUsageWLCG(QDate dateS, QDate dateE, Tier::TierCat cat)
     getDataFromWeb(dateS, cat);
 }
 
+//===========================================================================
+void MainWindow::plBarchart(Resources::Resources_type type)
+{
+    // Draw a bar chart for Pledged/Required/Used per year
+
+    PlTableModel *model = new PlTableModel();
+
+    int years = mDEEnd->date().year() - mDEStart->date().year() + 1;
+
+    // get the data
+    qint32 columns = 5; // year in ms; year; Pledged; Required; Used
+    qint32 rows   = years;
+    model->setColRow(columns, rows);
+    qint32 colYears    = 0;
+    qint32 colYear     = 1;
+    qint32 colPledged  = 2;
+    qint32 colRequired = 3;
+    qint32 colUsed     = 4;
+    QVector<QString> headers(columns);
+    headers.replace(colYears, "Year in ms");
+    headers.replace(colYear, "Year");
+    headers.replace(colPledged, "Pledged");
+    headers.replace(colRequired, "Required");
+    headers.replace(colUsed, "Used");
+    model->setHeader(headers);
+
+    setProgressBar();
+    int progressCount = 0;
+
+    QVector<double> *dataVec = new QVector<double>(columns - 2);
+    QStringList categories;
+    for (int year = mDEStart->date().year(); year <= mDEEnd->date().year(); year++) {
+        categories.append(QString::number(year));
+        dataVec->replace(colPledged - 2, ALICE::instance().getPledged(Tier::kTOTS, type, QString::number(year)));
+        dataVec->replace(colRequired - 2, ALICE::instance().getRequired(Tier::kTOTS, type, QString::number(year)));
+        QDate date = mDEStart->date();
+        double used = 0.;
+        int months = date.daysTo(mDEEnd->date()) / 30;
+        while (date <= mDEEnd->date()) {
+            transferProgress(progressCount++, months);
+            double value = ALICE::instance().getUsed(Tier::kTOTS, type, date);
+            if (used < value)
+                used = value;
+            date = date.addMonths(1);
+            qDebug() << Q_FUNC_INFO << value << used;
+        }
+        dataVec->replace(colUsed - 2, used);
+        model->addData(QString::number(year), dataVec);
+    }
+    setProgressBar(false);
+
+    QTableView *tableView = new QTableView;
+    tableView->setModel(model);
+    tableView->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+    tableView->verticalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+    tableView->setAlternatingRowColors(true);
+    tableView->hideColumn(0);
+
+    QChart *chart = new QChart;
+    chart->setTheme(QChart::ChartThemeHighContrast);
+    QMetaEnum me = QMetaEnum::fromType<Resources::Resources_type>();
+    QString swhat = me.key(type);
+    swhat.remove(0, 1);
+
+    QString title(QString("ALICE Pledged/Required/Used %1").arg(swhat));
+
+    chart->setTitle(title);
+
+    QBarSeries *series = new QBarSeries;
+    int first = 0;
+    QVBarModelMapper *mapper = new QVBarModelMapper(mMdiArea);
+    mapper->setModel(model);
+    mapper->setFirstBarSetColumn(2);
+    mapper->setLastBarSetColumn(4);
+    mapper->setFirstRow(first);
+    mapper->setRowCount(rows);
+    mapper->setSeries(series);
+    chart->addSeries(series);
+
+     QBarCategoryAxis *axis = new QBarCategoryAxis();
+     axis->append(categories);
+     chart->createDefaultAxes();
+     chart->setAxisX(axis, series);
+
+     QChartView *chartView = new QChartView(chart);
+     chartView->setRenderHint(QPainter::Antialiasing);
+     chartView->setMinimumSize(640, 480);
+     chartView->setChart(chart);
+     tableView->setMaximumHeight(180);
+     tableView->resizeColumnsToContents();
+
+     QSplitter *splitter = new QSplitter(Qt::Vertical);
+     splitter->addWidget(tableView);
+     splitter->addWidget(chartView);
+
+     QVBoxLayout *allLayout = new QVBoxLayout();
+     allLayout->addWidget(splitter);
+
+
+     for (QMdiSubWindow *sw : mMdiArea->subWindowList())
+         if(sw->windowTitle() == title) {
+             mMdiArea->removeSubWindow(sw);
+             sw->close();
+         }
+
+     QWidget *allTogether = new QWidget();
+     allTogether->setAttribute(Qt::WA_DeleteOnClose);
+     allTogether->setWindowTitle(title);
+     allTogether->setLayout(allLayout);
+
+     mMdiArea->addSubWindow(allTogether)->show();
+     allTogether->setStyleSheet("background-color:white");
+}
+
 
 //===========================================================================
 void MainWindow::plot(qint32 opt)
@@ -761,25 +896,25 @@ void MainWindow::plot(qint32 opt)
 
     switch (opt) {
     case kMandOProfile:
-        plProfile(kMandOProfile);
+        selectDates(kMandOProfile);
         break;
     case kRequirementsProfile:
-        plProfile(kRequirementsProfile);
+        selectDates(kRequirementsProfile, QDate(2025, 1, 1));
         break;
     case kPledgesProfile:
-        plProfile(kPledgesProfile);
+        selectDates(kPledgesProfile);
         break;
     case kRegisteredDataProfile:
         selectDates(kRegisteredDataProfile);
         break;
     case kUsageProfile:
-        plProfile(kUsageProfile);
+        selectDates(kUsageProfile);
         break;
     case kUsage_PledgesProfile:
-        plProfile(kUsage_PledgesProfile);
+        selectDates(kUsage_PledgesProfile);
         break;
     case kUsage_RequiredProfile:
-        plProfile(kUsage_RequiredProfile);
+        selectDates(kUsage_RequiredProfile);
         break;
     case kTierEfficiencyProfile:
         selectDates(kTierEfficiencyProfile);
@@ -788,8 +923,11 @@ void MainWindow::plot(qint32 opt)
         selectDates(kUserEfficiencyProfile);
         break;
     case kEventSizeProfile:
-        plProfile(kEventSizeProfile);
+        getDataFromFile(kEventSizeProfile);
+        plProfileEventSize();
         break;
+    case kPledgedRequiredUsed:
+        selectDates(kPledgedRequiredUsed, QDate(2025, 1, 1));
     default:
         break;
    }
@@ -1357,13 +1495,12 @@ void MainWindow::getDataFromFile(PlotOptions opt)
         mPlDataName.clear();
         qDeleteAll(mPlData.begin(), mPlData.end());
         mPlData.clear();
-
-        QString fileName(":/data/EventSize.csv");
-        QFile csvFile(fileName);
-        if (!csvFile.open(QIODevice::ReadOnly)) {
-            qWarning() << "File " << fileName << "could not be opened";
+        QString fileName("/data/EventSize.csv");
+        QByteArray dataA = ALICE::instance().getReportFromWeb(fileName);
+        if (dataA.isEmpty())
             return;
-        }
+        QTextStream csvFile(&dataA);
+
         // read headers in second line
         QString line = csvFile.readLine();
         line = csvFile.readLine();
@@ -1390,7 +1527,6 @@ void MainWindow::getDataFromFile(PlotOptions opt)
                 mPlData.append(dataVec);
             }
         }
-        csvFile.close();
         break;
     }
     default:
@@ -1437,7 +1573,7 @@ void MainWindow::plProfile(PlotOptions opt, Resources::Resources_type type)
         for (int year = mDEStart->date().year(); year <= mDEEnd->date().year(); year++) {
             transferProgress(count++, years);
             if (opt == kRequirementsProfile) {
-                    dataVec->replace(colT0 - 2, ALICE::instance().getRequired(Tier::kT0,   type, QString::number(year)));
+                dataVec->replace(colT0 - 2, ALICE::instance().getRequired(Tier::kT0,   type, QString::number(year)));
                 dataVec->replace(colT1 - 2, ALICE::instance().getRequired(Tier::kT1,   type, QString::number(year)));
                 dataVec->replace(colT2 - 2, ALICE::instance().getRequired(Tier::kT2,   type, QString::number(year)));
                 dataVec->replace(colTo - 2, ALICE::instance().getRequired(Tier::kTOTS, type, QString::number(year)));
@@ -1802,73 +1938,6 @@ void MainWindow::saveUrlFile(const QDate &date, Tier::TierCat cat)
 }
 
 //===========================================================================
-void MainWindow::plProfile(PlotOptions opt)
-{
-    // plot CPU, disk and tape required profile
-
-    switch (opt) {
-    case kMandOProfile:
-    {
-        plProfileMandO();
-        break;
-    }
-    case kRequirementsProfile:
-    {
-        selectDates(kRequirementsProfile, QDate(2025, 1, 1));
-        break;
-    }
-    case kPledgesProfile:
-    {
-        selectDates(kPledgesProfile);
-        break;
-    }
-
-    case kRegisteredDataProfile:
-    {
-        getDataFromWeb(kRegisteredDataProfile);
-        break;
-    }
-    case kUsageProfile:
-    {
-        selectDates(kUsageProfile);
-        break;
-    }
-    case kUsage_PledgesProfile:
-    {
-        selectDates(kUsage_PledgesProfile);
-        break;
-    }
-    case kUsage_RequiredProfile:
-    {
-        selectDates(kUsage_RequiredProfile);
-        break;
-    }
-    case kTierEfficiencyProfile:
-    {
-        getDataFromWeb(kTierEfficiencyProfile);
-
-        break;
-    }
-    case kUserEfficiencyProfile:
-    {
-        getDataFromWeb(kUserEfficiencyProfile);
-
-        break;
-    }
-    case kEventSizeProfile:
-    {
-        getDataFromFile(kEventSizeProfile);
-        plProfileEventSize();
-
-        break;
-    }
-    default:
-        break;
-    }
-
-}
-
-//===========================================================================
 void MainWindow::plProfileEventSize()
 {
     // draws the event size as a function of the LHC period
@@ -1961,18 +2030,20 @@ void MainWindow::plProfileMandO()
     headers.replace(colMaO, "M&O payers");
     headers.replace(colCPUperMaO, "CPU per M&O (HEPSpec06)");
     model->setHeader(headers);
-    QDir dataDir(":/data/");
+//    QDir dataDir(":/data/");
     double payersMax = 0.0;
     double cpupPayerMax = 0.0;
-    for (QString year : dataDir.entryList(QDir::Dirs)) {
+//    for (QString year : dataDir.entryList(QDir::Dirs)) {
+    int years = mDEStart->date().daysTo(mDEEnd->date()) / 365;
+    for (int year = mDEStart->date().year(); year <= mDEEnd->date().year(); year++) {
         QVector<double> *dataVec = new QVector<double>(columns - 2);
-        ALICE::instance().doReqAndPle(year);
+        ALICE::instance().doReqAndPle(QString::number(year));
         qint32 payers = ALICE::instance().countMOPayers();
         if (payers > payersMax)
             payersMax = payers;
-        double cpuPerPayers = ALICE::instance().getRequired(Tier::kT1, Resources::kCPU, year) +
-                              ALICE::instance().getRequired(Tier::kT2, Resources::kCPU, year) +
-                              ALICE::instance().getRequired(Tier::kT1, Resources::kCPU, year);
+        double cpuPerPayers = ALICE::instance().getRequired(Tier::kT1, Resources::kCPU, QString::number(year)) +
+                              ALICE::instance().getRequired(Tier::kT2, Resources::kCPU, QString::number(year)) +
+                              ALICE::instance().getRequired(Tier::kT1, Resources::kCPU, QString::number(year));
         if (payers == 0)
             cpuPerPayers = 0;
          else
@@ -1981,7 +2052,7 @@ void MainWindow::plProfileMandO()
             cpupPayerMax = cpuPerPayers;
         dataVec->replace(colMaO - 2, payers);
         dataVec->replace(colCPUperMaO - 2, cpuPerPayers);
-        model->addData(year, dataVec);
+        model->addData(QString::number(year), dataVec);
     }
     double y1max = payersMax;
     int exp = qFloor(qLn(y1max) / qLn(10));

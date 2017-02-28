@@ -50,6 +50,7 @@ void PlTableModel::addData(QVector<double> *vec)
 {
     // add one row of data: double, ....
     mData.append(vec);
+    qDebug() << Q_FUNC_INFO << mData.at(0)->at(0);
 }
 
 //===========================================================================

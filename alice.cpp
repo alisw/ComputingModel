@@ -1287,7 +1287,6 @@ FundingAgency *ALICE::searchFA(const QString &n) const
     else if (name == "Latin America")
         name = "Brazil";
     for (FundingAgency *fa : mFAs) {
-        qDebug() << Q_FUNC_INFO << name << fa->name();
         if (fa->name().contains(name) && fa->name().left(1) != "-") {
            return fa;
            break;

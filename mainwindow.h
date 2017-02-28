@@ -40,7 +40,7 @@ class MainWindow : public QMainWindow
 public:
     enum ActionOptions {kTheBigTable, kGetReport};
     enum PlotOptions {kMandOProfile, kRequirementsProfile, kPledgesProfile, kRegisteredDataProfile, kUsageProfile, kUsage_PledgesProfile, kUsage_RequiredProfile, kTierEfficiencyProfile, kUserEfficiencyProfile,
-                      kEventSizeProfile};
+                      kEventSizeProfile, kPledgedRequiredUsed};
     enum LoadOptions {kEGICPUReportT1, kEGICPUReportT2, kMLCPUReport, kMLStorageReport, kMLRAWProd};
 
     Q_ENUM (ActionOptions)
@@ -88,7 +88,7 @@ private:
     void        keyPressEvent(QKeyEvent *event);
     void        loadUsageML(LoadOptions opt, QDateTime dateS, QDateTime dateE);
     void        loadUsageWLCG(QDate dateS, QDate dateE, Tier::TierCat cat);
-    void        plProfile(PlotOptions opt);
+    void        plBarchart(Resources::Resources_type type);
     void        plProfileEventSize();
     void        plProfileMandO();
     void        plProfile(PlotOptions opt,  Resources::Resources_type type);
