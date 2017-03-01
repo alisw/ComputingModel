@@ -23,6 +23,7 @@ public:
     double        findMax() const ;
     Qt::ItemFlags flags(const QModelIndex &index) const;
     QVariant      headerData(int section, Qt::Orientation orientation, int role = Qt::DisplayRole) const;
+    bool          isEmpty() const;
     int           rowCount(const QModelIndex &parent = QModelIndex()) const;
     bool          setData(const QModelIndex &index, const QVariant &value, int role = Qt::EditRole);
     void          setColRow(int col, int row) { mColums = col; mRows = row; }

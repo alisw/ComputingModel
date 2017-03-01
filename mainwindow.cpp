@@ -20,6 +20,7 @@
 #include <QLegendMarker>
 #include <QLineSeries>
 #include <QMenuBar>
+#include <QMessageBox>
 #include <QMdiArea>
 #include <QMdiSubWindow>
 #include <QMessageBox>
@@ -779,6 +780,10 @@ void MainWindow::plBarchart(Resources::Resources_type type)
 {
     // Draw a bar chart for Pledged/Required/Used per year
 
+    QMetaEnum me = QMetaEnum::fromType<Resources::Resources_type>();
+    QString swhat = me.key(type);
+    swhat.remove(0, 1);
+
     PlTableModel *model = new PlTableModel();
 
     int years = mDEEnd->date().year() - mDEStart->date().year() + 1;
@@ -810,7 +815,7 @@ void MainWindow::plBarchart(Resources::Resources_type type)
         categories.append(QString::number(year));
         dataVec->replace(colPledged - 2, ALICE::instance().getPledged(Tier::kTOTS, type, QString::number(year)));
         dataVec->replace(colRequired - 2, ALICE::instance().getRequired(Tier::kTOTS, type, QString::number(year)));
-        double used = 0.;
+        double used = -1.;
         double value = 0.0;
         int    weight = 1;
         int months = date.daysTo(mDEEnd->date()) / 30;
@@ -819,6 +824,14 @@ void MainWindow::plBarchart(Resources::Resources_type type)
              value = ALICE::instance().getUsed(Tier::kT0,   type, date) +
                      ALICE::instance().getUsed(Tier::kT1,   type, date) +
                      ALICE::instance().getUsed(Tier::kT2,   type, date);
+            if(value < 0) {
+                setProgressBar(false);
+                QMessageBox message;
+                message.setText(QString("No report found for %1 %2").arg(swhat).arg(date.toString("MM.yyyy")));
+                message.exec();
+                break;
+            }
+
             switch (type) {
             case Resources::kCPU:
             {
@@ -844,9 +857,16 @@ void MainWindow::plBarchart(Resources::Resources_type type)
 
             date = date.addMonths(1);
         }
-        dataVec->replace(colUsed - 2, used/weight);
-        model->addData(QString::number(year), dataVec);
+        if (used != -1) {
+            dataVec->replace(colUsed - 2, used/weight);
+            model->addData(QString::number(year), dataVec);
+        }
     }
+
+    setProgressBar(false);
+
+    if (model->isEmpty()) // no data found
+        return;
 
     setProgressBar(false);
 
@@ -859,9 +879,6 @@ void MainWindow::plBarchart(Resources::Resources_type type)
 
     QChart *chart = new QChart;
     chart->setTheme(QChart::ChartThemeHighContrast);
-    QMetaEnum me = QMetaEnum::fromType<Resources::Resources_type>();
-    QString swhat = me.key(type);
-    swhat.remove(0, 1);
 
     QString title;
     switch (type) {
@@ -1577,6 +1594,10 @@ void MainWindow::   plProfile(PlotOptions opt, Resources::Resources_type type)
 {
     // plot requirements CPU, Disk and tape as a function of year
 
+    QMetaEnum me = QMetaEnum::fromType<Resources::Resources_type>();
+    QString swhat = me.key(type);
+    swhat.remove(0, 1); // removes the "k"
+
     PlTableModel *model = new PlTableModel();
 
     // get the data
@@ -1641,7 +1662,6 @@ void MainWindow::   plProfile(PlotOptions opt, Resources::Resources_type type)
                 value1 = ALICE::instance().getUsed(Tier::kT1,   type, date);
                 value2 = ALICE::instance().getUsed(Tier::kT2,   type, date);
                 valueo = ALICE::instance().getUsed(Tier::kTOTS, type, date);
-                qDebug() << Q_FUNC_INFO << type << date.year() << valueo;
             } else if (opt == kUsage_PledgesProfile){
                 value0 = 100 * ALICE::instance().getUsed(Tier::kT0,   type, date) / ALICE::instance().getPledged(Tier::kT0,   type, QString::number(date.year()));
                 value1 = 100 * ALICE::instance().getUsed(Tier::kT1,   type, date) / ALICE::instance().getPledged(Tier::kT1,   type, QString::number(date.year()));
@@ -1653,6 +1673,14 @@ void MainWindow::   plProfile(PlotOptions opt, Resources::Resources_type type)
                 value2 = 100 * ALICE::instance().getUsed(Tier::kT2,   type, date) / ALICE::instance().getRequired(Tier::kT2,   type, QString::number(date.year()));
                 valueo = 100 * ALICE::instance().getUsed(Tier::kTOTS, type, date) / ALICE::instance().getRequired(Tier::kTOTS, type, QString::number(date.year()));
             }
+            if(value0 < 0 || value1 < 0 || value2 < 0 || valueo < 0) {
+                setProgressBar(false);
+                QMessageBox message;
+                message.setText(QString("No report found for %1 %2").arg(swhat).arg(date.toString("MM.yyyy")));
+                message.exec();
+                break;
+            }
+
             dataVec->replace(colT0 - 2, value0);
             dataVec->replace(colT1 - 2, value1);
             dataVec->replace(colT2 - 2, value2);
@@ -1681,9 +1709,6 @@ void MainWindow::   plProfile(PlotOptions opt, Resources::Resources_type type)
     QChart *chart = new QChart;
     //   chart->setAnimationOptions(QChart::AllAnimations); // if set will not print the chart
     chart->setTheme(QChart::ChartThemeHighContrast);
-    QMetaEnum me = QMetaEnum::fromType<Resources::Resources_type>();
-    QString swhat = me.key(type);
-    swhat.remove(0, 1); // removes the "k"
     me = QMetaEnum::fromType<PlotOptions>();
     QString sopt = me.key(opt);
     sopt.remove("k");
@@ -2069,11 +2094,8 @@ void MainWindow::plProfileMandO()
     headers.replace(colMaO, "M&O payers");
     headers.replace(colCPUperMaO, "CPU per M&O (HEPSpec06)");
     model->setHeader(headers);
-//    QDir dataDir(":/data/");
     double payersMax = 0.0;
     double cpupPayerMax = 0.0;
-//    for (QString year : dataDir.entryList(QDir::Dirs)) {
-    int years = mDEStart->date().daysTo(mDEEnd->date()) / 365;
     for (int year = mDEStart->date().year(); year <= mDEEnd->date().year(); year++) {
         QVector<double> *dataVec = new QVector<double>(columns - 2);
         ALICE::instance().doReqAndPle(QString::number(year));

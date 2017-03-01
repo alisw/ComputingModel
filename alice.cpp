@@ -407,9 +407,11 @@ double ALICE::getUsed(Tier::TierCat tier, Resources::Resources_type restype, con
 {
     // retrieve required resources
 
+    static bool kReportExists;
     if (date != mCurrentUsedDate)
-            readMonthlyReport(date);
-
+        kReportExists = readMonthlyReport(date);
+    if (!kReportExists)
+        return -1;
     Resources res;
     switch (tier) {
     case Tier::kT0:
@@ -891,6 +893,8 @@ bool ALICE::readMonthlyReport(const QDate &date)
         }
         index++;
     }
+    if (aliceColumn == -1) // wrong or non-existant data in fileName
+        return false;
 
     double cpuUSumT0 = 0.0;
     double cpuUSumT1 = 0.0;

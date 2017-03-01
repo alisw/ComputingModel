@@ -161,6 +161,16 @@ QVariant PlTableModel::headerData(int section, Qt::Orientation orientation, int 
 }
 
 //===========================================================================
+bool PlTableModel::isEmpty() const
+{
+    // check if there are data
+    if (mData.size() > 0)
+        return false;
+    else
+        return true;
+}
+
+//===========================================================================
 int PlTableModel::rowCount(const QModelIndex &parent) const
 {
     Q_UNUSED(parent)
