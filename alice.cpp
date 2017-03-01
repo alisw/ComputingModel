@@ -346,7 +346,7 @@ QByteArray ALICE::getReportFromWeb(QString fileName)
     QSslConfiguration conf = request.sslConfiguration();
     conf.setPeerVerifyMode(QSslSocket::VerifyNone);
     request.setSslConfiguration(conf);
-    QString url = fileName.prepend("http://alicecrm.web.cern.ch");
+    QString url = fileName.prepend(dataURL());
     request.setUrl(url);
     if (!mNetworkManager)
         mNetworkManager = new QNetworkAccessManager(this);

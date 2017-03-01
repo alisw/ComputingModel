@@ -320,7 +320,7 @@ void MainWindow::validateDates(PlotOptions opt)
     }
     case kRequirementsProfile:
     {
-        mURL = QString("http://alicecrm.web.cern.ch");
+        mURL = ALICE::instance().dataURL();
         plProfile(kRequirementsProfile, Resources::kCPU);
         plProfile(kRequirementsProfile, Resources::kDISK);
         plProfile(kRequirementsProfile, Resources::kTAPE);
@@ -330,7 +330,7 @@ void MainWindow::validateDates(PlotOptions opt)
 
     case kPledgesProfile:
     {
-        mURL = QString("http://alicecrm.web.cern.ch");
+        mURL = ALICE::instance().dataURL();
         plProfile(kPledgesProfile, Resources::kCPU);
         plProfile(kPledgesProfile, Resources::kDISK);
         plProfile(kPledgesProfile, Resources::kTAPE);
@@ -349,7 +349,7 @@ void MainWindow::validateDates(PlotOptions opt)
     }
     case kUsageProfile:
     {
-        mURL = QString("http://alicecrm.web.cern.ch");
+        mURL = ALICE::instance().dataURL();
         plProfile(kUsageProfile, Resources::kCPU);
         plProfile(kUsageProfile, Resources::kDISK);
         plProfile(kUsageProfile, Resources::kTAPE);
@@ -357,7 +357,7 @@ void MainWindow::validateDates(PlotOptions opt)
     }
     case kUsage_PledgesProfile:
     {
-        mURL = QString("http://alicecrm.web.cern.ch");
+        mURL = ALICE::instance().dataURL();
         plProfile(kUsage_PledgesProfile, Resources::kCPU);
         plProfile(kUsage_PledgesProfile, Resources::kDISK);
         plProfile(kUsage_PledgesProfile, Resources::kTAPE);
@@ -365,7 +365,7 @@ void MainWindow::validateDates(PlotOptions opt)
     }
     case kUsage_RequiredProfile:
     {
-        mURL = QString("http://alicecrm.web.cern.ch");
+        mURL = ALICE::instance().dataURL();
         plProfile(kUsage_RequiredProfile, Resources::kCPU);
         plProfile(kUsage_RequiredProfile, Resources::kDISK);
         plProfile(kUsage_RequiredProfile, Resources::kTAPE);
@@ -391,7 +391,7 @@ void MainWindow::validateDates(PlotOptions opt)
     } 
     case kPledgedRequiredUsed:
     {
-        mURL = QString("http://alicecrm.web.cern.ch");
+        mURL = ALICE::instance().dataURL();
         plBarchart(Resources::kCPU);
         plBarchart(Resources::kDISK);
         plBarchart(Resources::kTAPE);

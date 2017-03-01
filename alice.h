@@ -38,6 +38,7 @@ public:
     void                 addDisk(Tier::TierCat cat, double disk);
     void                 addTape(Tier::TierCat cat, double tape);
     qint32               countMOPayers() const;
+    QString              dataURL() const { return QString("http://alicecrm.web.cern.ch"); }
     void                 doReqAndPle(const QString &year);
     void                 drawTable();
     QStandardItemModel   *getModel() { return mModel; }
