@@ -40,7 +40,7 @@ class MainWindow : public QMainWindow
 public:
     enum ActionOptions {kTheBigTable, kGetReport};
     enum PlotOptions {kMandOProfile, kRequirementsProfile, kPledgesProfile, kRegisteredDataProfile, kUsageProfile, kUsage_PledgesProfile, kUsage_RequiredProfile, kTierEfficiencyProfile, kUserEfficiencyProfile,
-                      kEventSizeProfile, kPledgedRequiredUsed};
+                      kEventSizeProfile, kPledgedRequiredUsed, kCPUUserShareProfile};
     enum LoadOptions {kEGICPUReportT1, kEGICPUReportT2, kMLCPUReport, kMLStorageReport, kMLRAWProd};
 
     Q_ENUM (ActionOptions)

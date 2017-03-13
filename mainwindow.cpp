@@ -216,19 +216,72 @@ void MainWindow::parsePlotUrlFile(PlotOptions opt)
     QVector<qint64> dates;
     stream.readLineInto(&line); //the header line
     QStringList strList = line.split(",");
-    for (QString str : strList)
-        mPlDataName.append(str);
-    while (stream.readLineInto(&line)) {
-        QVector<double> *dataVec = new QVector<double>(strList.size());
-        QStringList strlist = line.split(",");
-        QString date = strlist.at(0);
-        dates.append(date.toLongLong());
-        for (qint32 index = 1; index < strList.size(); index++) {
-            QString sdata = strlist.at(index);
-            double data   = sdata.toDouble();
-            dataVec->replace(index, data);
+    qint32 alidaqCol   = 0;
+    qint32 aliprodCol  = 0;
+    qint32 alitrainCol = 0;
+    qint32 col = 0;
+    for (QString str : strList) {
+        if (opt == kCPUUserShareProfile) {
+            if (str == "alidaq") {
+                mPlDataName.insert(0, "");
+                mPlDataName.insert(ALICE::kAliDaq + 1, str);
+                alidaqCol = col;
+            }
+            else if (str == "aliprod") {
+                mPlDataName.insert(ALICE::kAliProd + 1, str);
+                aliprodCol = col;
+            }
+            else if (str == "alitrain") {
+                mPlDataName.insert(ALICE::kAliTrain + 1, str);
+                alitrainCol = col;
+            }
+            col++;
+        } else {
+            mPlDataName.append(str);
         }
-        mPlData.append(dataVec);
+    }
+    if (opt == kCPUUserShareProfile) {
+        mPlDataName.insert(ALICE::kAliUsers + 1,"aliusers");
+        while (stream.readLineInto(&line)) {
+            QVector<double> *dataVec = new QVector<double>(ALICE::kAliUsers + 2);
+            QStringList strlist = line.split(",");
+            QString date = strlist.at(0);
+            dates.append(date.toLongLong());
+            double otherUsersData = 0.0;
+            for (qint32 index = 1; index < strList.size(); index++) {
+                QString sdata = strlist.at(index);
+                double data   = sdata.toDouble();
+                if (index == alidaqCol)
+                    dataVec->replace(ALICE::kAliDaq + 1, data);
+                else if (index == aliprodCol)
+                    dataVec->replace(ALICE::kAliProd + 1, data);
+                else if (index == alitrainCol)
+                    dataVec->replace(ALICE::kAliTrain + 1, data);
+                else
+                    otherUsersData += data;
+            }
+            dataVec->replace(ALICE::kAliUsers + 1, otherUsersData);
+            double sum = dataVec->at(ALICE::kAliDaq + 1) +
+                    dataVec->at(ALICE::kAliProd + 1) +
+                    dataVec->at(ALICE::kAliTrain + 1) +
+                    dataVec->at(ALICE::kAliUsers + 1);
+            for (qint32 index = 1; index < dataVec->size(); index++)
+                dataVec->replace(index, 100 * dataVec->at(index) / sum);
+            mPlData.append(dataVec);
+        }
+    } else {
+        while (stream.readLineInto(&line)) {
+            QVector<double> *dataVec = new QVector<double>(strList.size());
+            QStringList strlist = line.split(",");
+            QString date = strlist.at(0);
+            dates.append(date.toLongLong());
+            for (qint32 index = 1; index < strList.size(); index++) {
+                QString sdata = strlist.at(index);
+                double data   = sdata.toDouble();
+                dataVec->replace(index, data);
+            }
+            mPlData.append(dataVec);
+        }
     }
     stream.reset();
 
@@ -256,6 +309,9 @@ void MainWindow::parsePlotUrlFile(PlotOptions opt)
         break;
     case kEventSizeProfile:
         plProfileEventSize();
+        break;
+    case kCPUUserShareProfile:
+        plUserEfficiency(kCPUUserShareProfile);
         break;
     default:
         break;
@@ -377,7 +433,7 @@ void MainWindow::validateDates(PlotOptions opt)
         mURL += "?annotation.enabled=true&imgsize=1280x700";
         mURL += QString("&interval.max=%1&interval.min=%2").arg(diffS).arg(diffE);
         mURL += "&page=jobResUsageSum_eff_time&download_data_csv=true";
-        getDataFromWeb(kTierEfficiencyProfile);
+        getDataFromWeb(opt);
         break;
     }
     case kUserEfficiencyProfile:
@@ -386,7 +442,7 @@ void MainWindow::validateDates(PlotOptions opt)
         mURL += "?annotation.enabled=true&imgsize=1280x700";
         mURL += QString("&interval.max=%1&interval.min=%2").arg(diffS).arg(diffE);
         mURL += "&page=jpu%2Fefficiency&download_data_csv=true";
-        getDataFromWeb(kUserEfficiencyProfile);
+        getDataFromWeb(opt);
         break;
     } 
     case kPledgedRequiredUsed:
@@ -397,6 +453,12 @@ void MainWindow::validateDates(PlotOptions opt)
         plBarchart(Resources::kTAPE);
       break;
     }
+    case kCPUUserShareProfile:
+    {
+        mURL = QString("http://alimonitor.cern.ch/display?imgsize=1280x700&interval.max=%1&interval.min=%2&page=jpu/jpu_RUNNING&download_data_csv=true").arg(diffS).arg(diffE);
+        getDataFromWeb(opt);
+    }
+
     default:
         break;
 
@@ -943,7 +1005,6 @@ void MainWindow::plBarchart(Resources::Resources_type type)
      allTogether->setStyleSheet("background-color:white");
 }
 
-
 //===========================================================================
 void MainWindow::plot(qint32 opt)
 {
@@ -983,6 +1044,10 @@ void MainWindow::plot(qint32 opt)
         break;
     case kPledgedRequiredUsed:
         selectDates(kPledgedRequiredUsed, QDate(2025, 1, 1));
+        break;
+    case kCPUUserShareProfile:
+        selectDates(kCPUUserShareProfile);
+        break;
     default:
         break;
    }
@@ -1282,7 +1347,10 @@ void MainWindow::plUserEfficiency(PlotOptions opt)
     QValueAxis *axisY = new QValueAxis;
     axisY->setTickCount(9);
     axisY->setLabelFormat("%i");
-    axisY->setTitleText("Efficiency (%)");
+    if (opt == kUserEfficiencyProfile)
+        axisY->setTitleText("Efficiency (%)");
+    if (opt == kCPUUserShareProfile)
+        axisY->setTitleText("Share (%)");
     axisY->setMax(100);
     chart->addAxis(axisY, Qt::AlignLeft);
 
@@ -1379,10 +1447,15 @@ void MainWindow::plUserEfficiency(PlotOptions opt)
     PlTableModel *model = new PlTableModel();
     model->setColRow(ALICE::kAliUsers + 3, 1);
     QVector<QString> headers(model->columnCount());
-    headers.replace(ALICE::kAliDaq   + 2, "Average efficiency for Raw Processing (%)");
-    headers.replace(ALICE::kAliProd  + 2, "Average efficiency for MC Production (%)");
-    headers.replace(ALICE::kAliTrain + 2, "Average efficiency for Train Analysis (%)");
-    headers.replace(ALICE::kAliUsers + 2, "Average efficiency for Users Analysis (%)");
+    QString headerName;
+    if (opt == kUserEfficiencyProfile)
+        headerName = "efficiency";
+    if (opt == kCPUUserShareProfile)
+        headerName = "share";
+    headers.replace(ALICE::kAliDaq   + 2, QString("Average %1 for Raw Processing (%)").arg(headerName));
+    headers.replace(ALICE::kAliProd  + 2, QString("Average %1 for MC Production (%)").arg(headerName));
+    headers.replace(ALICE::kAliTrain + 2, QString("Average %1 for Train Analysis (%)").arg(headerName));
+    headers.replace(ALICE::kAliUsers + 2, QString("Average %1 for Users Analysis (%)").arg(headerName));
     model->setHeader(headers);
     QString dummy("1970");
     model->addData(dummy, avEffUsers);
