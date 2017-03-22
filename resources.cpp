@@ -35,7 +35,7 @@ Resources::Resources(double cpu, Resources::Cpu_Unit cpuU, double disk, Resource
 }
 
 //===========================================================================
-Resources::Resources(const Resources &other) :
+Resources::Resources(const Resources &other) : QObject(),
     mCPU(other.mCPU), mDisk(other.mDisk), mTape(other.mTape)
 {
     //copy ctor

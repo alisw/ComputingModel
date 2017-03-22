@@ -56,7 +56,7 @@ Naming::~Naming()
 }
 
 //===========================================================================
-Naming::Naming(const Naming &)
+Naming::Naming(const Naming &) : QObject()
 {
     //cpy ctor
 }
