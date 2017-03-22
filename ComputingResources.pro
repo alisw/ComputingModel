@@ -52,4 +52,14 @@ RESOURCES += \
     data/data.qrc
 
 DISTFILES += \
-    .travis.yml
+    .travis.yml \
+    ComputingResources.desktop
+
+# Installation
+target.path  = /usr/local/bin
+desktop.path = /usr/share/applications
+desktop.files += ComputingResources.desktop
+icons.path = /usr/share/icons/hicolor/48x48/apps
+icons.files += ComputingResources.png
+
+INSTALLS += target desktop icons

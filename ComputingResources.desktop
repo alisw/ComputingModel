@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=ComputingResources
+Comment=A tool to monitor computing resources usage by ALICE
+Exec=ComputingResources %F
+Icon=ComputingResources
+Terminal=false
+Categories=Sciences;Physics;Qt;
