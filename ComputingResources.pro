@@ -51,4 +51,5 @@ RESOURCES += \
     images.qrc \
     data/data.qrc
 
-DISTFILES +=
+DISTFILES += \
+    .travis.yml
