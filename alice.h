@@ -63,7 +63,7 @@ public:
 private:
     ALICE(QObject *parent = 0);
     ~ALICE() {;}// mLastRow.clear(); }
-    ALICE(const ALICE&) {}
+    ALICE(const ALICE&): QObject() {}
     qint32 countMOPayersT() const;
     bool   readGlanceData(const QString &year);
     bool   readRebus(const QString &year);

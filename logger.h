@@ -19,7 +19,7 @@ Q_SIGNALS:
 private:
    Logger(QObject *parent = 0);
    ~Logger() {}
-   Logger (const Logger&) {}
+   Logger (const Logger&):QObject() {}
 
    void writeMessage(const QString& message);
 

@@ -504,10 +504,10 @@ bool ALICE::readRebus(const QString &year)
                 cat = Tier::kT1;
             else if (strList.at(0) == "Tier 2")
                 cat = Tier::kT2;
-            else
+            else {
+                cat = Tier::kUnknown;
                 qWarning() << "Tier category" << strList.at(0) << "not recognized";
-
-
+            }
 
             FundingAgency *fa = searchFA(strList.at(1));
 
