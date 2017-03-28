@@ -82,6 +82,26 @@ void ALICE::addTape(Tier::TierCat cat, double tape)
 }
 
 //===========================================================================
+void ALICE::doOffenders(const QString &year)
+{
+    // build the table of due resources (requirements-pledges)
+    // collect the M&O information from Glance
+    readGlanceData(year);
+
+    organizeFA();
+
+    // collect the information from Rebus, sites and pledges
+    readRebus(year);
+
+    // collect the requirements from an ad hoc table
+    readRequirements(year);
+
+    // draw the table in a view
+    drawOffendersTable();
+}
+
+
+//===========================================================================
 void ALICE::doReqAndPle(const QString &year)
 {
     // build the table of requirements and pledges
@@ -108,6 +128,106 @@ void ALICE::doReqAndPle(const QString &year)
 
 
     // TEMPORARY DISABLE
+}
+
+//===========================================================================
+void ALICE::drawOffendersTable()
+{
+    // draw the table
+
+    // first add a few FAs clustering FAs per country
+
+    mModel->removeColumns(0, mModel->columnCount());
+
+    qint32 row = 0;
+
+    double sumDueCPU  = 0.0;
+    double sumDueDisk = 0.0;
+    double sumDueTape = 0.0;
+
+    for (FundingAgency *fa : mFAs) {
+        if (fa->name().left(1) == "-")
+            continue;
+        // due resources
+        double cpu  = fa->getPledgedCPU()  - fa->getRequiredCPU();
+        if (cpu >= 0)
+            cpu = 0;
+        sumDueCPU += cpu;
+        double disk = fa->getPledgedDisk() - fa->getRequiredDisk();
+        if (disk >= 0)
+            disk = 0;
+        sumDueDisk += disk;
+        double tape = fa->getPledgedTape() - fa->getRequiredTape();
+        if (tape >= 0 || fa->getRequiredTape() == 0)
+            tape = 0;
+        sumDueTape += tape;
+        if ((cpu < 0) || (disk) < 0 || (tape < 0)) {
+            QList<QStandardItem*> oneRow;
+            oneRow.insert(kStatC, new QStandardItem(fa->status()));
+            oneRow.insert(kFAC, new QStandardItem(fa->name()));
+            oneRow.insert(kMOC, new QStandardItem(QString("%1").arg(fa->payers())));
+            if (fa->name() == "CERN") {
+                oneRow.insert(kConC, new QStandardItem(QString("-")));
+            } else {
+                oneRow.insert(kConC, new QStandardItem(QString("%1").arg(fa->contrib(), 4, 'f', 2)));
+            }
+
+            qint32 col = kConC + 1;
+
+            QStandardItem *cpuSIP = new QStandardItem(QString("%1").arg(qAbs(cpu), 5, 'f', 2));
+            oneRow.insert(col++, cpuSIP);
+
+            QStandardItem *diskSIP = new QStandardItem(QString("%1").arg(qAbs(disk), 5, 'f', 2));
+            oneRow.insert(col++, diskSIP);
+
+            QStandardItem *tapeSIP = new QStandardItem(QString("%1").arg(qAbs(tape), 5, 'f', 2));
+            oneRow.insert(col++, tapeSIP);
+            mModel->insertRow(row, oneRow);
+            for (qint32 index = 0; index < col; index++)
+                mModel->item(row, index)->setTextAlignment(Qt::AlignRight | Qt::AlignVCenter);
+            oneRow.clear();
+            row++;        }
+    }
+
+    // the horizontal headers
+
+    mModel->setHorizontalHeaderItem(kStatC, new QStandardItem(tr("Status")));
+    mModel->setHorizontalHeaderItem(kFAC,   new QStandardItem(tr("Funding Agency")));
+    mModel->setHorizontalHeaderItem(kMOC,   new QStandardItem(tr("M&O Payers")));
+    mModel->setHorizontalHeaderItem(kConC,  new QStandardItem(tr("Contribution(%)")));
+
+    mModel->setHorizontalHeaderItem(kConC + 1, new QStandardItem(tr("Due CPU (kHEPSPEC06)")));
+    mModel->setHorizontalHeaderItem(kConC + 2, new QStandardItem(tr("Due Disk (PB)")));
+    mModel->setHorizontalHeaderItem(kConC + 3, new QStandardItem(tr("Due Tape (PB)")));
+
+    // the last row
+
+    mLastRow.clear();
+
+    QStandardItem * blanck1 = new QStandardItem("");
+    mLastRow.insert(0, blanck1);
+    QStandardItem *total = new QStandardItem("Total");
+    total->setTextAlignment((Qt::AlignHCenter | Qt::AlignVCenter));
+    mLastRow.insert(1, total);
+    QStandardItem *totMO = new QStandardItem(QString("%1").arg(countMOPayers()));
+    totMO->setTextAlignment((Qt::AlignRight | Qt::AlignVCenter));
+    mLastRow.insert(2, totMO);
+    QStandardItem * blanck2 = new QStandardItem("");
+    mLastRow.insert(3, blanck2);
+
+    QStandardItem *sumCPUD  = new QStandardItem(QString("%1").arg(qAbs(sumDueCPU), 5, 'f', 2));
+    QStandardItem *sumDiskD = new QStandardItem(QString("%1").arg(qAbs(sumDueDisk), 5, 'f', 2));
+    QStandardItem *sumTapeD = new QStandardItem(QString("%1").arg(qAbs(sumDueTape), 5, 'f', 2));
+    sumCPUD->setTextAlignment(Qt::AlignRight | Qt::AlignVCenter);
+    sumDiskD->setTextAlignment(Qt::AlignRight | Qt::AlignVCenter);
+    sumTapeD->setTextAlignment(Qt::AlignRight | Qt::AlignVCenter);
+
+    mLastRow.insert(4, sumCPUD);
+    mLastRow.insert(5, sumDiskD);
+    mLastRow.insert(6, sumTapeD);
+
+    mModel->appendRow(mLastRow);
+
 }
 
 //===========================================================================

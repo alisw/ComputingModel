@@ -45,7 +45,7 @@ HEADERS  += mainwindow.h \
     mymdiarea.h \
     tier.h \
     naming.h \
-    pltablemodel.h \
+    pltablemodel.h
 
 RESOURCES += \
     images.qrc \

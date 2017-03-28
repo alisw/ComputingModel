@@ -32,6 +32,7 @@
 #include <QProgressBar>
 #include <QSplitter>
 #include <QScatterSeries>
+#include <QSortFilterProxyModel>
 #include <QSslConfiguration>
 #include <QStatusBar>
 #include <QToolBar>
@@ -62,6 +63,7 @@ MainWindow::MainWindow(QWidget *parent)
     mNetworkManager    = Q_NULLPTR;
     mProgressBar       = Q_NULLPTR;
     mProgressBarWidget = Q_NULLPTR;
+    mOffTableConsol    = Q_NULLPTR;
     mTableConsol       = Q_NULLPTR;
     mURL            = "";
     setGeometry(0,0, 50, 25);
@@ -151,6 +153,9 @@ void MainWindow::doit(qint32 opt)
     case kTheBigTable:
         selectDate(kTheBigTable);
         break;
+    case kOffenderTable:
+        selectDate(kOffenderTable);
+        break;
     case kGetReport:
         selectDate(kGetReport);
         break;
@@ -184,6 +189,7 @@ void MainWindow::onTableClicked(const QModelIndex & index)
     // do something when cell is clicked
 
     if (index.isValid()) {
+        qDebug() << Q_FUNC_INFO << index.column() << index.row();
          QString cellText = index.data().toString();
          if (index.column() == 1) {
              FundingAgency * fa =  ALICE::instance().searchFA(cellText);
@@ -329,6 +335,24 @@ void MainWindow::showNetworkError(QNetworkReply::NetworkError er)
 }
 
 //===========================================================================
+void MainWindow::sortColumn(int col)
+{
+   // sort table according to column col
+   static bool kUp = true;
+
+   if (kUp)
+       mOffTableConsol->sortByColumn(col, Qt::DescendingOrder);
+   else
+       mOffTableConsol->sortByColumn(col, Qt::AscendingOrder);
+
+   kUp = !kUp;
+
+   mOffTableConsol->reset();
+   mOffTableConsol->show();
+
+}
+
+//===========================================================================
 void MainWindow::transferProgress(qint64 readBytes, qint64 totalBytes)
 {
     // update the progress bar while transferring data
@@ -347,6 +371,9 @@ void MainWindow::validateDate(ActionOptions opt)
     switch (opt) {
     case kTheBigTable:
         doeReqAndPle(QString::number(date.year()));
+        break;
+    case kOffenderTable:
+        doOffenders(QString::number(date.year()));
         break;
     case kGetReport:
         readMonthlyReport(date);
@@ -668,6 +695,45 @@ void MainWindow::setDebugMode(bool val)
         mDebugOffAction->setText("✓ Off");
         mLogConsolView->setVisible(false);
     }
+}
+
+//===========================================================================
+void MainWindow::doOffenders(const QString &year)
+{
+    // the console for table view
+
+    if (mOffTableConsol) {
+        mMdiArea->removeSubWindow(mOffTableConsol);
+        mOffTableConsol->close();
+        mOffTableConsolView->close();
+    }
+
+    QSortFilterProxyModel *proxymodel = new QSortFilterProxyModel;
+    proxymodel->setSourceModel(ALICE::instance().getModel());
+
+    mOffTableConsol = new QTableView(mMdiArea);
+    mOffTableConsol->setModel(proxymodel);
+
+    mOffTableConsol->setAttribute(Qt::WA_DeleteOnClose);
+    mOffTableConsol->setWindowTitle(QString(tr("Due ressources in %1 (pledget-required)")).arg(year));
+    mOffTableConsol->setEditTriggers(QAbstractItemView::NoEditTriggers);
+    mOffTableConsol->setModel(ALICE::instance().getModel());
+    mOffTableConsol->resizeColumnsToContents();
+    mOffTableConsol->horizontalHeader()->setStretchLastSection(true);
+    mOffTableConsol->activateWindow();
+    mOffTableConsol->setAlternatingRowColors(true);
+    mOffTableConsolView = mMdiArea->addSubWindow(mOffTableConsol);
+    mOffTableConsolView->setVisible(true);
+
+    mOffTableConsol->setSortingEnabled(true);
+
+    connect(mOffTableConsol, SIGNAL(clicked(QModelIndex)), this, SLOT(resizeViewOff()));
+
+    // sort the table following hit column when header is clicked
+    connect(mOffTableConsol->horizontalHeader(), SIGNAL(sectionClicked(int)), this, SLOT(sortColumn(int)));
+
+    // read M&O information from glance
+    ALICE::instance().doOffenders(year);
 }
 
 //===========================================================================

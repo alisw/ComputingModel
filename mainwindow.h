@@ -38,7 +38,7 @@ class MainWindow : public QMainWindow
     Q_OBJECT
 
 public:
-    enum ActionOptions {kTheBigTable, kGetReport};
+    enum ActionOptions {kTheBigTable, kOffenderTable, kGetReport};
     enum PlotOptions {kMandOProfile, kRequirementsProfile, kPledgesProfile, kRegisteredDataProfile, kUsageProfile, kUsage_PledgesProfile, kUsage_RequiredProfile, kTierEfficiencyProfile, kUserEfficiencyProfile,
                       kEventSizeProfile, kPledgedRequiredUsed, kCPUUserShareProfile};
     enum LoadOptions {kEGICPUReportT1, kEGICPUReportT2, kMLCPUReport, kMLStorageReport, kMLRAWProd};
@@ -67,9 +67,11 @@ private slots:
     void        plot(qint32 opt);
     void        printCurrentWindow() const;
     void        resizeView() {mTableConsol->resizeColumnsToContents();}
+    void        resizeViewOff() {mOffTableConsol->resizeColumnsToContents();}
     void        saveUrlFile(const QDate &date, LoadOptions opt);
     void        saveUrlFile(const QDate &date, Tier::TierCat cat);
     void        showNetworkError(QNetworkReply::NetworkError er);
+    void        sortColumn(int col);
     void        transferProgress(qint64 readBytes, qint64 totalBytes);
     void        validateDate(ActionOptions opt);
     void        validateDates(PlotOptions opt);
@@ -80,6 +82,7 @@ private:
     void        createMenu();
     static void customMessageHandler(QtMsgType type, const QMessageLogContext &context, const QString &msg);
     void        setDebugMode(bool val);
+    void        doOffenders(const QString &year);
     void        doeReqAndPle(const QString &year);
     void        getDataFromWeb(PlotOptions opt);
     void        getDataFromWeb(const QDate &date, Tier::TierCat cat);
@@ -106,7 +109,6 @@ private:
     QAction                 *mDebugOffAction;    // Action for debug mode off
     QAction                 *mDebugOnAction;     // Action for debug mode on
     QMenu                   *mDebugMenu;         // Menu Tab to set the debug on/off
-//    QList<QAction*>         mDoReqPle;           // Triggers doing the final table of requirements and pledges
     QLabel                  *mDownLoadText;      // The text associated with the download status window + mProgressBar
     QDateEdit               *mDEEnd;             // End date for the data to be plotted or loaded
     QDateEdit               *mDEStart;           // Start date for the data to be plotted or loaded
@@ -116,6 +118,8 @@ private:
     QMdiSubWindow           *mLogConsolView;     // The view of the log consol in the mdi area
     QMdiArea                *mMdiArea;           // The mdi area in the centralwidget
     QNetworkAccessManager   *mNetworkManager;    // The network manager
+    QTableView              *mOffTableConsol;    // The table where the due resources by offendersa are displayed
+    QMdiSubWindow           *mOffTableConsolView;// The view of the previous table
     QList<QVector<double>*> mPlData;             // Data to be plotted
     QList<QString>          mPlDataName;         // Name of the data to be plotted
     QList<QAction*>         mPlAct;              // Triggers plots

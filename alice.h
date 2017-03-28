@@ -39,7 +39,9 @@ public:
     void                 addTape(Tier::TierCat cat, double tape);
     qint32               countMOPayers() const;
     QString              dataURL() const { return QString("http://alicecrm.web.cern.ch"); }
+    void                 doOffenders(const QString &year);
     void                 doReqAndPle(const QString &year);
+    void                 drawOffendersTable();
     void                 drawTable();
     QStandardItemModel   *getModel() { return mModel; }
     double               getPledged(Tier::TierCat tier, Resources::Resources_type restype, const QString &year);
