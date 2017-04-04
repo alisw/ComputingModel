@@ -1093,7 +1093,7 @@ bool ALICE::readMonthlyReport(const QDate &date)
         if (cpu != 0) {
             FundingAgency *fa = searchFA(country);
             if (!fa) {
-                qWarning() << country << "is not an ALICE member";
+                qWarning() << "In" << date << country << "was not an ALICE member";
                 continue;
             }
             Tier *tier = fa->search(federation, true);

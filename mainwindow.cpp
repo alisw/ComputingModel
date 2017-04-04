@@ -922,8 +922,8 @@ void MainWindow::plBarchart(Resources::Resources_type type)
     model->setColRow(columns, rows);
     qint32 colYears    = 0;
     qint32 colYear     = 1;
-    qint32 colPledged  = 2;
-    qint32 colRequired = 3;
+    qint32 colRequired = 2;
+    qint32 colPledged  = 3;
     qint32 colUsed     = 4;
     QVector<QString> headers(columns);
     headers.replace(colYears, "Year in ms");
@@ -938,13 +938,19 @@ void MainWindow::plBarchart(Resources::Resources_type type)
 
     QVector<double> *dataVec = new QVector<double>(columns - 2);
     QStringList categories;
+    double valuemax = 0.0;
     QDate date = mDEStart->date();
     for (int year = mDEStart->date().year(); year <= mDEEnd->date().year(); year++) {
         categories.append(QString::number(year));
-        dataVec->replace(colPledged - 2, ALICE::instance().getPledged(Tier::kTOTS, type, QString::number(year)));
-        dataVec->replace(colRequired - 2, ALICE::instance().getRequired(Tier::kTOTS, type, QString::number(year)));
+        double value = ALICE::instance().getPledged(Tier::kTOTS, type, QString::number(year));
+        if (value > valuemax)
+            valuemax = value;
+        dataVec->replace(colPledged - 2, value);
+        value = ALICE::instance().getRequired(Tier::kTOTS, type, QString::number(year));
+        if (value > valuemax)
+            valuemax = value;
+        dataVec->replace(colRequired - 2, value);
         double used = -1.;
-        double value = 0.0;
         int    weight = 1;
         int months = date.daysTo(mDEEnd->date()) / 30;
         while (date <= QDate(year, 12, 21) && date <= mDEEnd->date()) {
@@ -959,6 +965,8 @@ void MainWindow::plBarchart(Resources::Resources_type type)
                 message.exec();
                 break;
             }
+            if (value > valuemax)
+                valuemax = value;
 
             switch (type) {
             case Resources::kCPU:
@@ -991,8 +999,6 @@ void MainWindow::plBarchart(Resources::Resources_type type)
         }
     }
 
-    setProgressBar(false);
-
     if (model->isEmpty()) // no data found
         return;
 
@@ -1011,13 +1017,13 @@ void MainWindow::plBarchart(Resources::Resources_type type)
     QString title;
     switch (type) {
     case Resources::kCPU:
-        title = QString("ALICE Pledged/Required/Used %1 (kHEPSpec06)").arg(swhat);
+        title = QString("ALICE Required/Pledged/Used %1 (kHEPSpec06)").arg(swhat);
         break;
     case Resources::kDISK:
-        title = QString("ALICE Pledged/Required/Used %1 (PB)").arg(swhat);
+        title = QString("ALICE Required/Pledged/Used %1 (PB)").arg(swhat);
         break;
     case Resources::kTAPE:
-        title = QString("ALICE Pledged/Required/Used %1 (PB)").arg(swhat);
+        title = QString("ALICE Required/Pledged/Used %1 (PB)").arg(swhat);
         break;
      default:
         break;
@@ -1036,10 +1042,18 @@ void MainWindow::plBarchart(Resources::Resources_type type)
     mapper->setSeries(series);
     chart->addSeries(series);
 
-     QBarCategoryAxis *axis = new QBarCategoryAxis();
-     axis->append(categories);
-     chart->createDefaultAxes();
-     chart->setAxisX(axis, series);
+     QBarCategoryAxis *xaxis = new QBarCategoryAxis();
+     QValueAxis       *yaxis = new QValueAxis();
+     int exp = qFloor(qLn(valuemax) / qLn(10));
+     if (valuemax  < qPow(10., exp))
+         valuemax = qPow(10., exp);
+     else {
+         valuemax = qCeil(valuemax / qPow(10, exp)) * qPow(10, exp);
+     }
+     yaxis->setMax(valuemax);
+     xaxis->append(categories);
+     chart->setAxisX(xaxis, series);
+     chart->setAxisY(yaxis, series);
 
      QChartView *chartView = new QChartView(chart);
      chartView->setRenderHint(QPainter::Antialiasing);
