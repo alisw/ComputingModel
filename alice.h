@@ -43,6 +43,7 @@ public:
     void                 doReqAndPle(const QString &year);
     void                 drawOffendersTable();
     void                 drawTable();
+    double               getDiskBuffer() const { return 6.0; } // 6PB of disk buffer
     QStandardItemModel   *getModel() { return mModel; }
     double               getPledged(Tier::TierCat tier, Resources::Resources_type restype, const QString &year);
     QByteArray           getReportFromWeb(QString fileName);

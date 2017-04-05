@@ -957,7 +957,8 @@ void MainWindow::plBarchart(Resources::Resources_type type)
             transferProgress(progressCount++, months);
              value = ALICE::instance().getUsed(Tier::kT0,   type, date) +
                      ALICE::instance().getUsed(Tier::kT1,   type, date) +
-                     ALICE::instance().getUsed(Tier::kT2,   type, date);
+                     ALICE::instance().getUsed(Tier::kT2,   type, date) +
+                     ALICE::instance().getDiskBuffer();
             if(value < 0) {
                 setProgressBar(false);
                 QMessageBox message;
@@ -993,6 +994,7 @@ void MainWindow::plBarchart(Resources::Resources_type type)
 
             date = date.addMonths(1);
         }
+
         if (used != -1) {
             dataVec->replace(colUsed - 2, used/weight);
             model->addData(QString::number(year), dataVec);
