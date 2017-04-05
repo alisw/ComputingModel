@@ -950,10 +950,11 @@ void MainWindow::plBarchart(Resources::Resources_type type)
         if (value > valuemax)
             valuemax = value;
         dataVec->replace(colRequired - 2, value);
-        double used = -1.;
+        double used = 0.01;
         int    weight = 1;
         int months = date.daysTo(mDEEnd->date()) / 30;
-        while (date <= QDate(year, 12, 21) && date <= mDEEnd->date()) {
+        while (date < QDate(year+1, 4, 1) && date <= mDEEnd->date()) { // year goes from april year to march year+1
+//            while (date <= QDate(year, 12, 31) && date <= mDEEnd->date()) { // year goes from january to december
             transferProgress(progressCount++, months);
              value = ALICE::instance().getUsed(Tier::kT0,   type, date) +
                      ALICE::instance().getUsed(Tier::kT1,   type, date) +
@@ -995,10 +996,10 @@ void MainWindow::plBarchart(Resources::Resources_type type)
             date = date.addMonths(1);
         }
 
-        if (used != -1) {
+//        if (used != -1) {
             dataVec->replace(colUsed - 2, used/weight);
             model->addData(QString::number(year), dataVec);
-        }
+//        }
     }
 
     if (model->isEmpty()) // no data found
