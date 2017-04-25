@@ -2438,7 +2438,10 @@ void MainWindow::selectDate(ActionOptions opt)
     QLabel *lDate = new QLabel("Date", datesel);
     QDate date(QDate::currentDate());
     mDEStart = new QDateEdit(datesel);
-    mDEStart->setMaximumDate(QDate::currentDate());
+    if ( opt != kTheBigTable )
+        mDEStart->setMaximumDate(QDate::currentDate());
+    else
+        mDEStart->setMaximumDate(QDate(2019, 12, 31));
     mDEStart->setMinimumDate(QDate(2014, 1, 1));
     mDEStart->setCalendarPopup(true);
     mDEStart->setDate(date);
