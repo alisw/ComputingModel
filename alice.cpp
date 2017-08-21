@@ -1218,8 +1218,12 @@ bool ALICE::readMonthlyReport(const QDate &date)
 
         Resources::Resources_type diskOrTape = fa->addUsedDiskTape(month, se, storage);
         if (diskOrTape == Resources::kTAPE) {
-            if (se.contains("CERN::T0ALICE"))
+            if (se.contains("CERN::T0ALICE")) {
+
+
                 tapeUSumT0 += storage;
+                qDebug() << Q_FUNC_INFO << se << storage << tapeUSumT0;
+            }
             else if (!se.contains("ALICE::CERN::CASTOR2"))
                 tapeUSumT1 += storage;
         } else if (diskOrTape == Resources::kDISK) {

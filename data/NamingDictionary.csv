@@ -140,6 +140,7 @@ RU;Russia;;SPbSU-CC;Russian Data-Intensive GRID
 RU;Russia;;SPbSU-CREAM;Russian Data-Intensive GRID
 SK;Slovakia;ALICE::Bratislava::SE;Bratislava;Slovak Tier2 Federation
 SK;Slovakia;ALICE::Kosice::SE;Kosice;Slovak Tier2 Federation
+SK;Slovakia;ALICE::Kosice::EOS;Kosice;Slovak Tier2 Federation
 ZA;South Africa;ALICE::ZA_CHPC::EOS;ZA_CHPC;CHPC Tier2
 ZA;South Africa;ALICE::ZA_CHPC::SE;;CHPC Tier2
 ES;Spain;ALICE::Trujillo::SE;Trujillo;

@@ -1688,6 +1688,7 @@ void MainWindow::getDataFromWeb(const QDate &date, LoadOptions opt)
         mNetworkManager = new QNetworkAccessManager(this);
     QNetworkReply *reply = mNetworkManager->get(request);
 
+    qDebug() << Q_FUNC_INFO << mURL;
 
     connect(reply, SIGNAL(downloadProgress(qint64,qint64)), this, SLOT(transferProgress(qint64,qint64)));
     connect(reply, SIGNAL(error(QNetworkReply::NetworkError)), this, SLOT(showNetworkError(QNetworkReply::NetworkError)));

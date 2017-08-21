@@ -53,7 +53,9 @@ RESOURCES += \
 
 DISTFILES += \
     .travis.yml \
-    ComputingResources.desktop
+    ComputingResources.desktop \
+    .appveyor.yml \
+    innosetup.iss
 
 # Installation
 target.path  = /usr/local/bin
